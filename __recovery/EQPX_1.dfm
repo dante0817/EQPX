@@ -1,0 +1,1371 @@
+object frmMain: TfrmMain
+  Left = 0
+  Top = 0
+  Caption = 'frmMain'
+  ClientHeight = 669
+  ClientWidth = 1462
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OnCreate = FormCreate
+  TextHeight = 15
+  object pnlMain: TPanel
+    Left = 0
+    Top = 41
+    Width = 1462
+    Height = 64
+    Align = alTop
+    Caption = 'pnl'
+    TabOrder = 0
+    object Plot_1st: TButton
+      Left = 13
+      Top = 20
+      Width = 75
+      Height = 25
+      Caption = 'Plot_1st'
+      TabOrder = 0
+      OnClick = Plot_1stClick
+    end
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 105
+    Width = 1462
+    Height = 564
+    Align = alClient
+    Caption = 'Panel1'
+    TabOrder = 1
+    object pgMain: TPageControl
+      Left = 1
+      Top = 1
+      Width = 1460
+      Height = 562
+      ActivePage = tsEQBulletin
+      Align = alClient
+      TabOrder = 0
+      object tsDB: TTabSheet
+        Caption = 'tsDB'
+        ImageIndex = 4
+        object Panel2: TPanel
+          Left = 149
+          Top = 0
+          Width = 784
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel2'
+          TabOrder = 0
+          object lvEQ_events: TListView
+            Left = 6
+            Top = 231
+            Width = 755
+            Height = 289
+            Checkboxes = True
+            Columns = <>
+            TabOrder = 0
+            ViewStyle = vsReport
+          end
+          object Panel4: TPanel
+            Left = 1
+            Top = 1
+            Width = 782
+            Height = 208
+            Align = alTop
+            Caption = 'Panel4'
+            TabOrder = 1
+            object gbxEQ_params: TGroupBox
+              Left = 1
+              Top = 1
+              Width = 321
+              Height = 206
+              Align = alLeft
+              Caption = 'gbxEQ_params'
+              TabOrder = 0
+              object ledEQ_datex: TLabeledEdit
+                Left = 32
+                Top = 40
+                Width = 121
+                Height = 23
+                EditLabel.Width = 65
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_datex'
+                TabOrder = 0
+                Text = ''
+              end
+              object ledEQ_timex: TLabeledEdit
+                Left = 32
+                Top = 90
+                Width = 121
+                Height = 23
+                EditLabel.Width = 66
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_timex'
+                TabOrder = 1
+                Text = ''
+              end
+              object ledEQ_Lat: TLabeledEdit
+                Left = 185
+                Top = 40
+                Width = 121
+                Height = 23
+                EditLabel.Width = 52
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_Lat'
+                TabOrder = 2
+                Text = ''
+              end
+              object ledEQ_Lon: TLabeledEdit
+                Left = 185
+                Top = 80
+                Width = 121
+                Height = 23
+                EditLabel.Width = 56
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_Lon'
+                TabOrder = 3
+                Text = ''
+              end
+              object ledEQ_Dep: TLabeledEdit
+                Left = 185
+                Top = 122
+                Width = 121
+                Height = 23
+                EditLabel.Width = 57
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_Dep'
+                TabOrder = 4
+                Text = ''
+              end
+              object ledEQ_Mag: TLabeledEdit
+                Left = 32
+                Top = 133
+                Width = 121
+                Height = 23
+                EditLabel.Width = 60
+                EditLabel.Height = 15
+                EditLabel.Caption = 'ledEQ_Mag'
+                TabOrder = 5
+                Text = ''
+              end
+              object dtpEQ_datetime_start_GMT: TDateTimePicker
+                Left = 20
+                Top = 172
+                Width = 169
+                Height = 23
+                Date = 45580.000000000000000000
+                Time = 0.890702442127803800
+                Kind = dtkDateTime
+                TabOrder = 6
+              end
+            end
+          end
+        end
+        object Panel3: TPanel
+          Left = 0
+          Top = 0
+          Width = 149
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel2'
+          TabOrder = 1
+          object btnEQevents: TButton
+            Left = 8
+            Top = 55
+            Width = 105
+            Height = 25
+            Caption = 'btnEQevents'
+            TabOrder = 0
+            OnClick = btnEQeventsClick
+          end
+          object btnExtract_DateTime: TButton
+            Left = 8
+            Top = 86
+            Width = 121
+            Height = 25
+            Caption = 'btnExtract_DateTime'
+            TabOrder = 1
+            OnClick = btnExtract_DateTimeClick
+          end
+          object DB: TButton
+            Left = 24
+            Top = 24
+            Width = 75
+            Height = 25
+            Caption = 'DB'
+            TabOrder = 2
+            OnClick = DBClick
+          end
+          object btnSetDateTimePicker: TButton
+            Left = 0
+            Top = 120
+            Width = 129
+            Height = 25
+            Caption = 'btnSetDateTimePicker'
+            TabOrder = 3
+            OnClick = btnSetDateTimePickerClick
+          end
+        end
+      end
+      object tsATLAS: TTabSheet
+        Caption = 'tsATLAS'
+        ImageIndex = 2
+        object Panel5: TPanel
+          Left = 0
+          Top = 0
+          Width = 185
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel5'
+          TabOrder = 0
+          object ListAtlas_files: TButton
+            Left = 16
+            Top = 40
+            Width = 137
+            Height = 25
+            Caption = 'ListAtlas_files'
+            TabOrder = 0
+            OnClick = ListAtlas_filesClick
+          end
+          object Filter_time: TButton
+            Left = 16
+            Top = 71
+            Width = 161
+            Height = 25
+            Caption = 'Filter_time'
+            TabOrder = 1
+            OnClick = Filter_timeClick
+          end
+          object Extract_EQinfo: TButton
+            Left = 16
+            Top = 102
+            Width = 161
+            Height = 25
+            Caption = 'Extract_EQinfo'
+            TabOrder = 2
+            OnClick = Extract_EQinfoClick
+          end
+          object Filter_distance: TButton
+            Left = 8
+            Top = 133
+            Width = 121
+            Height = 25
+            Caption = 'Filter_distance'
+            TabOrder = 3
+            OnClick = Filter_distanceClick
+          end
+          object Atlas: TButton
+            Left = 16
+            Top = 9
+            Width = 75
+            Height = 25
+            Caption = 'Atlas'
+            TabOrder = 4
+            OnClick = AtlasClick
+          end
+          object Combine_AtlasPS: TButton
+            Left = 16
+            Top = 177
+            Width = 129
+            Height = 25
+            Caption = 'Combine_AtlasPS'
+            TabOrder = 5
+            OnClick = Combine_AtlasPSClick
+          end
+        end
+        object Panel6: TPanel
+          Left = 185
+          Top = 0
+          Width = 272
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel6'
+          TabOrder = 1
+          object mmoATLAS_files2: TMemo
+            Left = 1
+            Top = 137
+            Width = 270
+            Height = 177
+            Align = alTop
+            Lines.Strings = (
+              'mmoATLAS_files2')
+            ScrollBars = ssBoth
+            TabOrder = 0
+          end
+          object mmoATLAS_files: TMemo
+            Left = 1
+            Top = 1
+            Width = 270
+            Height = 136
+            Align = alTop
+            Lines.Strings = (
+              'mmoATLAS_files')
+            ScrollBars = ssBoth
+            TabOrder = 1
+          end
+          object mmoATLAS_files_final: TMemo
+            Left = 1
+            Top = 314
+            Width = 270
+            Height = 198
+            Align = alTop
+            Lines.Strings = (
+              'mmoATLAS_files_final')
+            ScrollBars = ssBoth
+            TabOrder = 2
+          end
+        end
+        object Panel7: TPanel
+          Left = 457
+          Top = 0
+          Width = 995
+          Height = 532
+          Align = alClient
+          Caption = 'Panel7'
+          TabOrder = 2
+          object sgAtlas_data: TStringGrid
+            Left = 1
+            Top = 1
+            Width = 993
+            Height = 176
+            Align = alTop
+            ColCount = 11
+            TabOrder = 0
+            ColWidths = (
+              64
+              55
+              49
+              49
+              136
+              64
+              64
+              64
+              64
+              109
+              64)
+          end
+          object sgAtlasData2: TStringGrid
+            Left = 1
+            Top = 177
+            Width = 993
+            Height = 200
+            Align = alTop
+            ColCount = 11
+            TabOrder = 1
+            ColWidths = (
+              64
+              64
+              64
+              64
+              64
+              64
+              64
+              64
+              64
+              149
+              64)
+          end
+          object sgAtlasData_Final: TStringGrid
+            Left = 1
+            Top = 377
+            Width = 993
+            Height = 152
+            Align = alTop
+            ColCount = 13
+            TabOrder = 2
+            ColWidths = (
+              64
+              64
+              64
+              64
+              131
+              64
+              163
+              64
+              64
+              75
+              51
+              128
+              64)
+          end
+        end
+      end
+      object tsPhaseData: TTabSheet
+        Caption = 'tsPhaseData'
+        ImageIndex = 5
+        object Panel8: TPanel
+          Left = 0
+          Top = 0
+          Width = 185
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel8'
+          TabOrder = 0
+          object PhaseData_extract: TButton
+            Left = 5
+            Top = 65
+            Width = 137
+            Height = 25
+            Caption = 'PhaseData_extract'
+            TabOrder = 0
+            OnClick = PhaseData_extractClick
+          end
+          object PhaseData_Filter_Time: TButton
+            Left = 16
+            Top = 96
+            Width = 145
+            Height = 25
+            Caption = 'PhaseData_Filter_Time'
+            TabOrder = 1
+            OnClick = PhaseData_Filter_TimeClick
+          end
+          object PhaseData_Filter_Distance: TButton
+            Left = 6
+            Top = 127
+            Width = 174
+            Height = 25
+            Caption = 'PhaseData_Filter_Distance'
+            TabOrder = 2
+            OnClick = PhaseData_Filter_DistanceClick
+          end
+          object PhaseData: TButton
+            Left = 5
+            Top = 25
+            Width = 75
+            Height = 25
+            Caption = 'PhaseData'
+            TabOrder = 3
+            OnClick = PhaseDataClick
+          end
+          object ConvertDateTime_format: TButton
+            Left = 10
+            Top = 182
+            Width = 169
+            Height = 25
+            Caption = 'ConvertDateTime_format'
+            TabOrder = 4
+            OnClick = ConvertDateTime_formatClick
+          end
+          object CombineData: TButton
+            Left = 10
+            Top = 213
+            Width = 121
+            Height = 25
+            Caption = 'CombineData'
+            TabOrder = 5
+            OnClick = CombineDataClick
+          end
+          object DateTimePicker_update: TButton
+            Left = 8
+            Top = 244
+            Width = 160
+            Height = 25
+            Caption = 'DateTimePicker_update'
+            TabOrder = 6
+            OnClick = DateTimePicker_updateClick
+          end
+        end
+        object Panel9: TPanel
+          Left = 185
+          Top = 0
+          Width = 904
+          Height = 532
+          Align = alLeft
+          Caption = 'Panel9'
+          TabOrder = 1
+          object sgPhaseData: TStringGrid
+            Left = 1
+            Top = 1
+            Width = 902
+            Height = 168
+            Align = alTop
+            ColCount = 10
+            TabOrder = 0
+          end
+          object sgPhaseData_Filter_Time: TStringGrid
+            Left = 1
+            Top = 169
+            Width = 902
+            Height = 208
+            Align = alTop
+            TabOrder = 1
+          end
+          object sgPhaseData_Filter_Distance: TStringGrid
+            Left = 1
+            Top = 377
+            Width = 902
+            Height = 168
+            Align = alTop
+            ColCount = 10
+            TabOrder = 2
+            ColWidths = (
+              64
+              64
+              64
+              147
+              64
+              177
+              64
+              104
+              64
+              64)
+          end
+        end
+      end
+      object tsEQP: TTabSheet
+        Caption = 'tsEQP'
+        ImageIndex = 7
+        object pnl1: TPanel
+          Left = 0
+          Top = 0
+          Width = 177
+          Height = 532
+          Align = alLeft
+          TabOrder = 0
+          object gbxEQP_data: TGroupBox
+            Left = 1
+            Top = 1
+            Width = 175
+            Height = 152
+            Align = alTop
+            Caption = 'gbxEQP_data'
+            TabOrder = 0
+            object EQ_data: TButton
+              Left = 32
+              Top = 47
+              Width = 113
+              Height = 25
+              Caption = 'EQ_data'
+              TabOrder = 0
+              OnClick = EQ_dataClick
+            end
+            object PLOT_DAT: TButton
+              Left = 32
+              Top = 80
+              Width = 129
+              Height = 25
+              Caption = 'PLOT_DAT'
+              TabOrder = 1
+              OnClick = PLOT_DATClick
+            end
+            object PHILSTA_DAT: TButton
+              Left = 32
+              Top = 111
+              Width = 129
+              Height = 25
+              Caption = 'PHILSTA_DAT'
+              TabOrder = 2
+              OnClick = PHILSTA_DATClick
+            end
+            object EQP_data: TButton
+              Left = 8
+              Top = 16
+              Width = 113
+              Height = 25
+              Caption = 'EQP_data'
+              TabOrder = 3
+              OnClick = EQP_dataClick
+            end
+          end
+          object gbxPLOT: TGroupBox
+            Left = 1
+            Top = 153
+            Width = 175
+            Height = 184
+            Align = alTop
+            Caption = 'gbxPLOT'
+            TabOrder = 1
+            object PLOT_eq: TButton
+              Left = 16
+              Top = 55
+              Width = 83
+              Height = 25
+              Caption = 'PLOT_eq'
+              TabOrder = 0
+              OnClick = PLOT_eqClick
+            end
+            object ExtractResult_heading: TButton
+              Left = 24
+              Top = 86
+              Width = 123
+              Height = 25
+              Caption = 'ExtractResult_heading'
+              TabOrder = 1
+              OnClick = ExtractResult_headingClick
+            end
+            object Update_res_PS: TButton
+              Left = 24
+              Top = 117
+              Width = 105
+              Height = 25
+              Caption = 'Update_res_PS'
+              TabOrder = 2
+              OnClick = Update_res_PSClick
+            end
+            object Plot: TButton
+              Left = 3
+              Top = 24
+              Width = 89
+              Height = 25
+              Caption = 'Plot'
+              TabOrder = 3
+              OnClick = PlotClick
+            end
+            object Used_P_S: TButton
+              Left = 24
+              Top = 148
+              Width = 97
+              Height = 25
+              Caption = 'Used_P_S'
+              TabOrder = 4
+              OnClick = Used_P_SClick
+            end
+          end
+          object gbxRePlot: TGroupBox
+            Left = 1
+            Top = 337
+            Width = 175
+            Height = 160
+            Align = alTop
+            Caption = 'gbxRePlot'
+            TabOrder = 2
+            object AutoPlot1: TButton
+              Left = 16
+              Top = 24
+              Width = 75
+              Height = 25
+              Caption = 'AutoPlot1'
+              TabOrder = 0
+              OnClick = AutoPlot1Click
+            end
+            object RePlot: TButton
+              Left = 32
+              Top = 55
+              Width = 75
+              Height = 25
+              Caption = 'RePlot'
+              TabOrder = 1
+              OnClick = RePlotClick
+            end
+            object RePlot_orig: TButton
+              Left = 32
+              Top = 86
+              Width = 75
+              Height = 25
+              Caption = 'Replot_orig'
+              TabOrder = 2
+              OnClick = RePlot_origClick
+            end
+            object Plot_again: TButton
+              Left = 30
+              Top = 117
+              Width = 75
+              Height = 25
+              Caption = 'Plot_again'
+              TabOrder = 3
+              OnClick = Plot_againClick
+            end
+          end
+        end
+        object pnl2: TPanel
+          Left = 362
+          Top = 0
+          Width = 1090
+          Height = 532
+          Align = alClient
+          Caption = 'pnl2'
+          TabOrder = 1
+          object pnl3: TPanel
+            Left = 1
+            Top = 129
+            Width = 1088
+            Height = 402
+            Align = alClient
+            TabOrder = 0
+            object Panel10: TPanel
+              Left = 609
+              Top = 1
+              Width = 225
+              Height = 400
+              Align = alLeft
+              Caption = 'Panel10'
+              TabOrder = 0
+              object GroupBox18: TGroupBox
+                Left = 1
+                Top = 1
+                Width = 223
+                Height = 116
+                Align = alTop
+                Caption = 'GroupBox18'
+                TabOrder = 0
+                object edtTotal_P: TEdit
+                  Left = 9
+                  Top = 22
+                  Width = 65
+                  Height = 23
+                  TabOrder = 0
+                  Text = 'edtTotal_P'
+                end
+                object edtUsed_P: TEdit
+                  Left = 11
+                  Top = 49
+                  Width = 63
+                  Height = 23
+                  TabOrder = 1
+                  Text = 'edtUsed_P'
+                end
+                object edtTotal_S: TEdit
+                  Left = 94
+                  Top = 18
+                  Width = 67
+                  Height = 23
+                  TabOrder = 2
+                  Text = 'edtTotal_S'
+                end
+                object edtUsed_S: TEdit
+                  Left = 95
+                  Top = 45
+                  Width = 59
+                  Height = 23
+                  TabOrder = 3
+                  Text = 'edtUsed_S'
+                end
+                object edtError_P: TEdit
+                  Left = 16
+                  Top = 76
+                  Width = 73
+                  Height = 23
+                  TabOrder = 4
+                  Text = 'edtError_P'
+                end
+                object edtError_S: TEdit
+                  Left = 95
+                  Top = 72
+                  Width = 65
+                  Height = 23
+                  TabOrder = 5
+                  Text = 'edtError_S'
+                end
+              end
+              object Highest_S: TButton
+                Left = 56
+                Top = 240
+                Width = 97
+                Height = 25
+                Caption = 'Highest_S'
+                TabOrder = 1
+                OnClick = Highest_SClick
+              end
+              object Highest_P: TButton
+                Left = 56
+                Top = 271
+                Width = 97
+                Height = 25
+                Caption = 'Highest_P'
+                TabOrder = 2
+                OnClick = Highest_PClick
+              end
+            end
+            object Panel12: TPanel
+              Left = 1
+              Top = 1
+              Width = 608
+              Height = 400
+              Align = alLeft
+              Caption = 'Panel12'
+              TabOrder = 1
+              object sgMainData: TStringGrid
+                Left = 1
+                Top = 1
+                Width = 606
+                Height = 232
+                Align = alTop
+                ColCount = 11
+                FixedCols = 0
+                RowCount = 100
+                TabOrder = 0
+                ColWidths = (
+                  192
+                  65
+                  37
+                  28
+                  55
+                  31
+                  42
+                  41
+                  33
+                  35
+                  64)
+              end
+              object mmoResult: TMemo
+                Left = 1
+                Top = 233
+                Width = 606
+                Height = 208
+                Align = alTop
+                Lines.Strings = (
+                  'mmoResult')
+                TabOrder = 1
+              end
+            end
+          end
+          object Panel11: TPanel
+            Left = 1
+            Top = 1
+            Width = 1088
+            Height = 128
+            Align = alTop
+            TabOrder = 1
+            object edtHighestP_STN: TEdit
+              Left = 0
+              Top = 30
+              Width = 121
+              Height = 23
+              TabOrder = 0
+              Text = 'edtHighestP_STN'
+            end
+            object edtHighestS_STN: TEdit
+              Left = 140
+              Top = 30
+              Width = 121
+              Height = 23
+              TabOrder = 1
+              Text = 'edtHighestS_STN'
+            end
+            object ledHighestP_rms: TLabeledEdit
+              Left = 96
+              Top = 3
+              Width = 33
+              Height = 23
+              EditLabel.Width = 92
+              EditLabel.Height = 23
+              EditLabel.Caption = 'Highest RMS (P) :'
+              LabelPosition = lpLeft
+              TabOrder = 2
+              Text = '10.0'
+            end
+            object ledHighestS_rms: TLabeledEdit
+              Left = 236
+              Top = 3
+              Width = 33
+              Height = 23
+              EditLabel.Width = 91
+              EditLabel.Height = 23
+              EditLabel.Caption = 'Highest RMS (S) :'
+              LabelPosition = lpLeft
+              TabOrder = 3
+              Text = '0.0'
+            end
+            object ledRMS: TLabeledEdit
+              Left = 290
+              Top = 101
+              Width = 41
+              Height = 23
+              EditLabel.Width = 40
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledRMS'
+              LabelPosition = lpLeft
+              TabOrder = 4
+              Text = ''
+            end
+            object edtRMSX: TEdit
+              Left = 275
+              Top = 30
+              Width = 82
+              Height = 23
+              TabOrder = 5
+              Text = 'edtRMSX'
+            end
+            object ledLat: TLabeledEdit
+              Left = 398
+              Top = 68
+              Width = 51
+              Height = 23
+              EditLabel.Width = 32
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledLat'
+              LabelPosition = lpLeft
+              TabOrder = 6
+              Text = ''
+            end
+            object ledLon: TLabeledEdit
+              Left = 398
+              Top = 95
+              Width = 51
+              Height = 23
+              EditLabel.Width = 36
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledLon'
+              LabelPosition = lpLeft
+              TabOrder = 7
+              Text = ''
+            end
+            object ledDep: TLabeledEdit
+              Left = 493
+              Top = 68
+              Width = 51
+              Height = 23
+              EditLabel.Width = 37
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledDep'
+              LabelPosition = lpLeft
+              TabOrder = 8
+              Text = ''
+            end
+            object cbxInitialPlot: TCheckBox
+              Left = 656
+              Top = 8
+              Width = 97
+              Height = 17
+              Caption = 'cbxInitialPlot'
+              Checked = True
+              State = cbChecked
+              TabOrder = 9
+            end
+            object Button3: TButton
+              Left = 759
+              Top = 8
+              Width = 75
+              Height = 25
+              Caption = 'Button3'
+              TabOrder = 10
+            end
+            object dtpEQDateTime: TDateTimePicker
+              Left = 566
+              Top = 101
+              Width = 169
+              Height = 23
+              Date = 45580.000000000000000000
+              Time = 0.890702442127803800
+              Kind = dtkDateTime
+              TabOrder = 11
+            end
+            object ledMagnitude: TLabeledEdit
+              Left = 643
+              Top = 72
+              Width = 121
+              Height = 23
+              EditLabel.Width = 74
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledMagnitude'
+              LabelPosition = lpLeft
+              TabOrder = 12
+              Text = ''
+            end
+            object ledEQ_name: TLabeledEdit
+              Left = 69
+              Top = 99
+              Width = 156
+              Height = 23
+              EditLabel.Width = 57
+              EditLabel.Height = 23
+              EditLabel.Caption = 'EQ name : '
+              LabelPosition = lpLeft
+              TabOrder = 13
+              Text = ''
+            end
+          end
+        end
+        object pnl4: TPanel
+          Left = 177
+          Top = 0
+          Width = 185
+          Height = 532
+          Align = alLeft
+          Caption = 'pnl4'
+          TabOrder = 2
+        end
+      end
+      object tsEQBulletin: TTabSheet
+        Caption = 'tsEQBulletin'
+        object Panel13: TPanel
+          Left = 0
+          Top = 0
+          Width = 265
+          Height = 532
+          Align = alLeft
+          TabOrder = 0
+          object gbxBulletin_dirs: TGroupBox
+            Left = 1
+            Top = 1
+            Width = 263
+            Height = 520
+            Align = alTop
+            TabOrder = 0
+            object ledSolution_path: TLabeledEdit
+              Left = 132
+              Top = 113
+              Width = 121
+              Height = 23
+              EditLabel.Width = 77
+              EditLabel.Height = 23
+              EditLabel.Caption = 'Solution path :'
+              LabelPosition = lpLeft
+              TabOrder = 0
+              Text = 'SolutionX'
+            end
+            object ledBulletin_path: TLabeledEdit
+              Left = 132
+              Top = 86
+              Width = 121
+              Height = 23
+              EditLabel.Width = 73
+              EditLabel.Height = 23
+              EditLabel.Caption = 'Bulletin path :'
+              LabelPosition = lpLeft
+              TabOrder = 1
+              Text = 'BulletinX'
+            end
+            object ledBase_path: TLabeledEdit
+              Left = 132
+              Top = 59
+              Width = 121
+              Height = 23
+              EditLabel.Width = 69
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledBase_path'
+              LabelPosition = lpLeft
+              TabOrder = 2
+              Text = 'EQP_X'
+            end
+            object ledDrive_default: TLabeledEdit
+              Left = 132
+              Top = 32
+              Width = 121
+              Height = 23
+              EditLabel.Width = 85
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledDrive_default'
+              LabelPosition = lpLeft
+              TabOrder = 3
+              Text = 'D:\'
+            end
+            object ledEQBulletin_temp: TLabeledEdit
+              Left = 132
+              Top = 168
+              Width = 121
+              Height = 23
+              EditLabel.Width = 104
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledEQBulletin_temp'
+              LabelPosition = lpLeft
+              TabOrder = 4
+              Text = 'EQBulletin_temp.html'
+            end
+            object ledEQBulletin_template: TLabeledEdit
+              Left = 132
+              Top = 195
+              Width = 121
+              Height = 23
+              EditLabel.Width = 123
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledEQBulletin_template'
+              LabelPosition = lpLeft
+              TabOrder = 5
+              Text = 'EQBTemplate2.htm'
+            end
+            object ledEQMap_temp: TLabeledEdit
+              Left = 132
+              Top = 222
+              Width = 121
+              Height = 23
+              EditLabel.Width = 88
+              EditLabel.Height = 23
+              EditLabel.Caption = 'ledEQMap_temp'
+              LabelPosition = lpLeft
+              TabOrder = 6
+              Text = 'Map_temp.jpg'
+            end
+            object GroupBox16: TGroupBox
+              Left = 22
+              Top = 269
+              Width = 231
+              Height = 113
+              Caption = 'GroupBox16'
+              TabOrder = 7
+              object lblQVP_distance: TLabel
+                Left = 16
+                Top = 24
+                Width = 85
+                Height = 15
+                Caption = 'lblQVP_distance'
+              end
+              object lblCity_nearest: TLabel
+                Left = 16
+                Top = 43
+                Width = 77
+                Height = 15
+                Caption = 'lblCity_nearest'
+              end
+              object lblTown_nearest: TLabel
+                Left = 16
+                Top = 62
+                Width = 84
+                Height = 15
+                Caption = 'lblTown_nearest'
+              end
+              object lblFaultLine_nearest: TLabel
+                Left = 16
+                Top = 81
+                Width = 104
+                Height = 15
+                Caption = 'lblFaultLine_nearest'
+              end
+            end
+            object gbxMagnitude: TGroupBox
+              Left = 1
+              Top = 401
+              Width = 259
+              Height = 105
+              Caption = 'gbxMagnitude'
+              TabOrder = 8
+              object RemoveOutliers_mag: TButton
+                Left = 25
+                Top = 64
+                Width = 129
+                Height = 25
+                Caption = 'RemoveOutliers_mag'
+                TabOrder = 0
+                OnClick = RemoveOutliers_magClick
+              end
+              object Magnitude: TButton
+                Left = 14
+                Top = 28
+                Width = 136
+                Height = 25
+                Caption = 'Magnitude'
+                TabOrder = 1
+                OnClick = MagnitudeClick
+              end
+            end
+          end
+        end
+      end
+      object tsSTATIONS: TTabSheet
+        Caption = 'tsSTATIONS'
+        ImageIndex = 3
+        object sgSOEPD_stations: TStringGrid
+          Left = 136
+          Top = 16
+          Width = 905
+          Height = 465
+          ColCount = 7
+          TabOrder = 0
+          ColWidths = (
+            64
+            64
+            64
+            64
+            157
+            397
+            64)
+        end
+        object btnStations: TButton
+          Left = 24
+          Top = 48
+          Width = 75
+          Height = 25
+          Caption = 'btnStations'
+          TabOrder = 1
+          OnClick = btnStationsClick
+        end
+      end
+      object tsSettings: TTabSheet
+        Caption = 'tsSettings'
+        ImageIndex = 1
+        object grpMain: TGroupBox
+          Left = 24
+          Top = 16
+          Width = 385
+          Height = 169
+          Caption = 'grpMain'
+          TabOrder = 0
+          object lblProgramPath: TLabel
+            Left = 24
+            Top = 32
+            Width = 83
+            Height = 15
+            Caption = 'lblProgramPath'
+          end
+          object ledMag_max: TLabeledEdit
+            Left = 84
+            Top = 53
+            Width = 121
+            Height = 23
+            EditLabel.Width = 68
+            EditLabel.Height = 23
+            EditLabel.Caption = 'ledMag_max'
+            LabelPosition = lpLeft
+            TabOrder = 0
+            Text = '4.0'
+          end
+          object ledTime_cutoff: TLabeledEdit
+            Left = 84
+            Top = 82
+            Width = 81
+            Height = 23
+            EditLabel.Width = 79
+            EditLabel.Height = 23
+            EditLabel.Caption = 'ledTime_cutoff'
+            LabelPosition = lpLeft
+            TabOrder = 1
+            Text = '2'
+          end
+        end
+        object cdrvwEQ_events1: TCalendarView
+          Left = 632
+          Top = 32
+          Date = 45537.000000000000000000
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -20
+          Font.Name = 'Segoe UI'
+          Font.Style = []
+          HeaderInfo.DaysOfWeekFont.Charset = DEFAULT_CHARSET
+          HeaderInfo.DaysOfWeekFont.Color = clWindowText
+          HeaderInfo.DaysOfWeekFont.Height = -13
+          HeaderInfo.DaysOfWeekFont.Name = 'Segoe UI'
+          HeaderInfo.DaysOfWeekFont.Style = []
+          HeaderInfo.Font.Charset = DEFAULT_CHARSET
+          HeaderInfo.Font.Color = clWindowText
+          HeaderInfo.Font.Height = -20
+          HeaderInfo.Font.Name = 'Segoe UI'
+          HeaderInfo.Font.Style = []
+          OnChange = cdrvwEQ_events1Change
+          ParentFont = False
+          TabOrder = 1
+        end
+        object GroupBox8: TGroupBox
+          Left = 29
+          Top = 203
+          Width = 160
+          Height = 134
+          Caption = 'FilterError'
+          Color = 13559807
+          ParentBackground = False
+          ParentColor = False
+          TabOrder = 2
+          object ledMInimum_P: TLabeledEdit
+            Left = 88
+            Top = 18
+            Width = 57
+            Height = 23
+            EditLabel.Width = 42
+            EditLabel.Height = 23
+            EditLabel.Caption = 'P (min.)'
+            LabelPosition = lpLeft
+            TabOrder = 0
+            Text = '3'
+          end
+          object ledMInimum_S: TLabeledEdit
+            Left = 88
+            Top = 42
+            Width = 57
+            Height = 23
+            EditLabel.Width = 41
+            EditLabel.Height = 23
+            EditLabel.Caption = 'S (min.)'
+            LabelPosition = lpLeft
+            TabOrder = 1
+            Text = '2'
+          end
+          object ledError_Pmin: TLabeledEdit
+            Left = 88
+            Top = 74
+            Width = 57
+            Height = 23
+            EditLabel.Width = 73
+            EditLabel.Height = 23
+            EditLabel.Caption = 'Error (P min) :'
+            LabelPosition = lpLeft
+            TabOrder = 2
+            Text = '1.5'
+          end
+          object ledError_Smin: TLabeledEdit
+            Left = 88
+            Top = 98
+            Width = 57
+            Height = 23
+            EditLabel.Width = 72
+            EditLabel.Height = 23
+            EditLabel.Caption = 'Error (S min) :'
+            LabelPosition = lpLeft
+            TabOrder = 3
+            Text = '0.99'
+          end
+        end
+      end
+    end
+  end
+  object Panel14: TPanel
+    Left = 0
+    Top = 0
+    Width = 1462
+    Height = 41
+    Align = alTop
+    Caption = 'Earthquake Plotter X'
+    Color = 15375872
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clNavy
+    Font.Height = -19
+    Font.Name = 'Papyrus'
+    Font.Style = [fsBold]
+    ParentBackground = False
+    ParentFont = False
+    TabOrder = 2
+    object lblVersion: TLabel
+      Left = 843
+      Top = 13
+      Width = 40
+      Height = 22
+      Caption = '1.0x'
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clLime
+      Font.Height = -19
+      Font.Name = 'Consolas'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object Panel15: TPanel
+      Left = 1
+      Top = 1
+      Width = 160
+      Height = 39
+      Align = alLeft
+      TabOrder = 0
+      object Label2: TLabel
+        Left = 1
+        Top = 1
+        Width = 158
+        Height = 21
+        Align = alTop
+        AutoSize = False
+        Caption = 'EQPX 0.92A'
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clRed
+        Font.Height = -16
+        Font.Name = 'Viner Hand ITC'
+        Font.Style = [fsBold]
+        ParentFont = False
+      end
+      object Label3: TLabel
+        Left = 1
+        Top = 22
+        Width = 158
+        Height = 17
+        Align = alTop
+        AutoSize = False
+        Caption = ' DSS : 090222'
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clMaroon
+        Font.Height = -13
+        Font.Name = 'Tempus Sans ITC'
+        Font.Style = []
+        ParentFont = False
+        ExplicitTop = 27
+        ExplicitWidth = 72
+      end
+    end
+  end
+end

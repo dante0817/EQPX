@@ -1,0 +1,7 @@
+Station,P,Polarity,P arrival,S,S arrival,Amplitude,Time Dur,Type,Freq
+TGY,eP,d,165740.49,eS,165755.24,1769.00,,L,
+LQP,eP,c,034756.35,,160.00,079,L,
+LQP,eP,c,084041.88,,157.00,084,L,
+LQP,eP,c,165744.37,eS,165800.02,331.00,105,L,
+LQP,eP,c,182906.82,,143.00,,T,
+LLP,iP,c,020057.48,eS,020158.09,402.20,175,L,

@@ -1,0 +1,13 @@
+SGCP - No data from 0000z to 0126z; 0136z to 0214z; 1455z to 2359z
+
+BATP - Data up to 0831z (intermittent)
+
+BUTP - No data from 1329z to 2310z
+
+MATI - No data from 1616z to 2229z
+
+APYP - Intermittent Data
+
+SMPP - No data from 1200z to 2311z
+
+BATP - NQR; No data from 0000z to 0143z; 0200z to 0240z; 0747z to 2359z

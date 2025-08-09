@@ -1,0 +1,1865 @@
+unit EQPX_1;
+
+interface
+
+uses
+  System.DateUtils, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
+  Vcl.WinXCalendars, Vcl.Grids, Vcl.Samples.Calendar, Vcl.Mask, StrUtils, Generics.Collections;
+
+type
+  TfrmMain = class(TForm)
+    pnlMain: TPanel;
+    Panel1: TPanel;
+    pgMain: TPageControl;
+    TabSheet1: TTabSheet;
+    tsSettings: TTabSheet;
+    grpMain: TGroupBox;
+    lblProgramPath: TLabel;
+    cdrvwEQ_events1: TCalendarView;
+    tsATLAS: TTabSheet;
+    tsSTATIONS: TTabSheet;
+    sgSOEPD_stations: TStringGrid;
+    btnStations: TButton;
+    tsDB: TTabSheet;
+    Panel2: TPanel;
+    Panel3: TPanel;
+    lvEQ_events: TListView;
+    btnEQevents: TButton;
+    Panel4: TPanel;
+    gbxEQ_params: TGroupBox;
+    ledEQ_datex: TLabeledEdit;
+    ledEQ_timex: TLabeledEdit;
+    ledEQ_Lat: TLabeledEdit;
+    ledEQ_Lon: TLabeledEdit;
+    ledEQ_Dep: TLabeledEdit;
+    ledEQ_Mag: TLabeledEdit;
+    btnExtract_DateTime: TButton;
+    ledMag_max: TLabeledEdit;
+    btnDB: TButton;
+    Panel5: TPanel;
+    btnListAtlas_files: TButton;
+    btnFilter_time: TButton;
+    btnExtract_EQinfo: TButton;
+    btnFilter_distance: TButton;
+    btnAtlas: TButton;
+    ledTime_cutoff: TLabeledEdit;
+    Panel6: TPanel;
+    mmoATLAS_files2: TMemo;
+    mmoATLAS_files: TMemo;
+    mmoATLAS_files_final: TMemo;
+    Panel7: TPanel;
+    sgAtlas_data: TStringGrid;
+    sgAtlasData2: TStringGrid;
+    sgAtlasData_Final: TStringGrid;
+    btnCombine_AtlasPS: TButton;
+    tsPhaseData: TTabSheet;
+    Panel8: TPanel;
+    Panel9: TPanel;
+    sgPhaseData: TStringGrid;
+    btnPhaseData_extract: TButton;
+    sgPhaseData_Filter_Time: TStringGrid;
+    btnPhaseData_Filter_Time: TButton;
+    sgPhaseData_Filter_Distance: TStringGrid;
+    btnPhaseData_Filter_Distance: TButton;
+    tsCombineData: TTabSheet;
+    Panel10: TPanel;
+    btnPhaseData: TButton;
+    btnMain: TButton;
+    Panel11: TPanel;
+    sgCombineData: TStringGrid;
+    btnCombineData: TButton;
+    Button1: TButton;
+    Memo1: TMemo;
+    btnCombineData2: TButton;
+    sgEQ_events: TStringGrid;
+    tsEQPlotter_data: TTabSheet;
+    btnConvertDateTime_format: TButton;
+    btnDateTime_ShortFormat: TButton;
+    procedure btnEQeventsClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure cdrvwEQ_events1Change(Sender: TObject);
+    procedure btnListAtlas_filesClick(Sender: TObject);
+    procedure btnExtract_DateTimeClick(Sender: TObject);
+    procedure btnFilter_timeClick(Sender: TObject);
+    procedure btnDBClick(Sender: TObject);
+    procedure btnExtract_EQinfoClick(Sender: TObject);
+    procedure btnStationsClick(Sender: TObject);
+    procedure btnFilter_distanceClick(Sender: TObject);
+    procedure btnAtlasClick(Sender: TObject);
+    procedure btnCombine_AtlasPSClick(Sender: TObject);
+    procedure btnPhaseData_extractClick(Sender: TObject);
+    procedure btnPhaseData_Filter_TimeClick(Sender: TObject);
+    procedure btnPhaseData_Filter_DistanceClick(Sender: TObject);
+    procedure btnPhaseDataClick(Sender: TObject);
+    procedure btnMainClick(Sender: TObject);
+    procedure btnCombineDataClick(Sender: TObject);
+    procedure btnCombineData2Click(Sender: TObject);
+    procedure btnConvertDateTime_formatClick(Sender: TObject);
+    procedure btnDateTime_ShortFormatClick(Sender: TObject);
+
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmMain: TfrmMain;
+
+implementation
+
+{$R *.dfm}
+
+uses UTILS_DB, UTILS_fileIO, UTILS_settings, UTILS_DateTime, UTILS_ATLAS,
+  UTILS_stations, UTILS_PhaseData, UTILS_CombineData;
+
+procedure TfrmMain.btnCombineDataClick(Sender: TObject);
+begin
+  CombineAndUpdateAtlasData(sgPhaseData_Filter_Distance, sgAtlasData_Final);
+end;
+
+procedure TfrmMain.btnCombine_AtlasPSClick(Sender: TObject);
+begin
+  Combine_AtlasPS(sgAtlasData2, sgAtlasData_final);
+end;
+
+procedure TfrmMain.btnConvertDateTime_formatClick(Sender: TObject);
+var DateTime_format1 : string;
+begin
+  DateTime_format1 := sgAtlasData_Final.Cells[4,1];
+  ConvertDateTime_format(DateTime_format1);
+end;
+
+procedure TfrmMain.btnEQeventsClick(Sender: TObject);
+var
+  Year, Month, Day: Word;
+  MaxMagnitude: Double;
+begin
+  Year := 2020;
+  Month := 01;
+  Day   := 02;
+
+  // Get the maximum magnitude from the LabeledEdit
+  MaxMagnitude := StrToFloat(ledMag_max.Text);
+
+  // Set up the ListView with columns using the procedure from UTILS_settings
+  UTILS_settings.SetupListView(lvEQ_events);
+
+  // Pass the year, month, day, and max magnitude to the procedure
+  BrowseEarthquakeData(Year, Month, Day, lvEQ_events, lblProgramPath.Caption, MaxMagnitude);
+end;
+
+procedure TfrmMain.btnFilter_timeClick(Sender: TObject);
+var
+  DateStr: string;
+  TimeStr: string;
+  CutoffMin : integer;
+begin
+  // Get the date and time from the labeled edit controls
+  DateStr := ledEQ_datex.Text;  // Assuming 'ledEQ_datex' is where the date is entered
+  TimeStr := ledEQ_timex.Text;  // Assuming 'ledEQ_timex' is where the time is entered
+  CutoffMin := StrToInt(ledTime_cutoff.Text);
+
+  // Call the extraction procedure, passing the memo, date, time, and grid
+  UTILS_ATLAS.Filter_Time(mmoATLAS_files, DateStr, TimeStr, CutoffMin, mmoATLAS_files2);
+end;
+
+procedure TfrmMain.btnFilter_distanceClick(Sender: TObject);
+var
+  eqMag: Single;
+  Cutoff_Distance: Double;
+begin
+  // Retrieve the earthquake magnitude from the labeled edit
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  // Determine the cutoff distance based on the magnitude
+  if (eqMag >= 3.5) and (eqMag <= 3.9) then
+    Cutoff_Distance := 300
+  else if (eqMag >= 3.0) and (eqMag <= 3.4) then
+    Cutoff_Distance := 200
+  else if (eqMag >= 2.5) and (eqMag <= 2.9) then
+    Cutoff_Distance := 100
+  else if (eqMag < 2.5) then
+    Cutoff_Distance := 50;
+
+  // Call the ComputeHypocentralDistance procedure with the calculated cutoff distance
+  Filter_Distance(sgAtlas_data, sgSOEPD_stations, sgAtlasData2,
+                  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag, Cutoff_Distance);
+end;
+
+procedure TfrmMain.btnExtract_DateTimeClick(Sender: TObject);
+begin
+//  UTILS_DateTime.ExtractCheckedDateTime(lvEQ_events, ledEQ_datex, ledEQ_timex);
+
+  UTILS_DateTime.ExtractCheckedDateTime2(lvEQ_events, ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep);
+end;
+
+procedure TfrmMain.btnExtract_EQinfoClick(Sender: TObject);
+begin
+  UTILS_ATLAS.ExtractSelectedAtlasParametersToGrid(mmoATLAS_files2, sgATLAS_data);
+end;
+
+procedure TfrmMain.btnListAtlas_filesClick(Sender: TObject);
+begin
+  UTILS_fileIO.ListAtlasDataFilesInMemo(ledEQ_datex.Text, ledEQ_timex.Text);
+end;
+
+procedure TfrmMain.btnMainClick(Sender: TObject);
+begin
+btnAtlasClick(nil);
+Application.ProcessMessages;
+
+btnDBClick(nil);
+Application.ProcessMessages;
+
+//btnPhaseDataClick(nil);
+//Application.ProcessMessages;
+end;
+
+procedure TfrmMain.btnPhaseDataClick(Sender: TObject);
+begin
+  btnPhaseData_extractClick(nil);
+  btnPhaseData_Filter_TimeClick(nil);
+  btnPhaseData_Filter_DistanceClick(nil);
+end;
+
+procedure TfrmMain.btnPhaseData_extractClick(Sender: TObject);
+var
+  EQDate: TDateTime;
+  CSVFilePath, ProgramPath: string;
+begin
+  EQDate := ISO8601ToDate(ledEQ_datex.Text);
+  ProgramPath := lblProgramPath.Caption;  // Path from lblProgramPath
+  // Call the conversion procedure
+  ConvertExcelToCSV(EQDate, ProgramPath);
+  CSVFilePath := IncludeTrailingPathDelimiter(ProgramPath) + 'TEMP\temp.csv';
+
+  // Load the CSV data into the TStringGrid (sgPhaseData)
+  LoadCSVToGrid(CSVFilePath, sgPhaseData);
+ end;
+
+procedure TfrmMain.btnPhaseData_Filter_DistanceClick(Sender: TObject);
+var
+  eqMag: Single;
+  Cutoff_Distance: Double;
+begin
+  // Retrieve the earthquake magnitude from the labeled edit
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  // Determine the cutoff distance based on the magnitude
+  if (eqMag >= 3.5) and (eqMag <= 3.9) then
+    Cutoff_Distance := 300
+  else if (eqMag >= 3.0) and (eqMag <= 3.4) then
+    Cutoff_Distance := 200
+  else if (eqMag >= 2.5) and (eqMag <= 2.9) then
+    Cutoff_Distance := 100
+  else if (eqMag < 2.5) then
+    Cutoff_Distance := 50;
+
+  // Now filter sgPhaseData2 by distance and save the result to sgPhaseData_Filter_Distance
+  UTILS_PhaseData.PhaseData_Filter_Distance(sgPhaseData_Filter_Time, sgSOEPD_stations, sgPhaseData_Filter_Distance,
+                  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag, Cutoff_Distance);
+end;
+
+procedure TfrmMain.btnPhaseData_Filter_TimeClick(Sender: TObject);
+var
+  DateStr, TimeStr: string;
+  CutoffMin: Integer;
+begin
+  // Get the date and time from the labeled edit controls
+  DateStr := ledEQ_datex.Text;
+  TimeStr := ledEQ_timex.Text;
+  CutoffMin := StrToInt(ledTime_cutoff.Text);  // Convert cutoff minutes to integer
+
+  // Call the extraction procedure, passing both grids, date, time, and cutoff
+  UTILS_PhaseData.PhaseData_Filter_Time2(sgPhaseData, sgPhaseData_Filter_Time, DateStr, TimeStr, CutoffMin);
+end;
+
+procedure TfrmMain.btnStationsClick(Sender: TObject);
+var
+  DatabasePath: string;
+begin
+  // Build the full path to the SQLite database
+  DatabasePath := lblProgramPath.Caption + 'DB\SOEPD.sdb';
+  // Load stations data into the TStringGrid
+  LoadStationsToGrid(sgSOEPD_stations, DatabasePath);
+end;
+
+procedure TfrmMain.btnCombineData2Click(Sender: TObject);
+var
+  i, j, CombinedRowCount: Integer;
+  stationValuePhase, stationValueAtlas: string;
+  found: Boolean;
+begin
+  // Step 1: Initialize CombinedRowCount with the current row count of sgAtlasData_Final
+  CombinedRowCount := sgAtlasData_Final.RowCount;
+
+  // Step 2: Iterate through each row in sgPhaseData_Filter_Distance to insert or update data
+  for i := 1 to sgPhaseData_Filter_Distance.RowCount - 1 do
+  begin
+    // Get the station value from sgPhaseData_Filter_Distance
+    stationValuePhase := sgPhaseData_Filter_Distance.Cells[0, i]; // Assuming station column is at index 0
+
+    found := False;
+
+    // Step 3: Check if the station already exists in sgAtlasData_Final
+    for j := 1 to sgAtlasData_Final.RowCount - 1 do
+    begin
+      stationValueAtlas := sgAtlasData_Final.Cells[1, j]; // Assuming station column is at index 1 in sgAtlasData_Final
+
+      if stationValuePhase = stationValueAtlas then
+      begin
+        // Station found, update the existing row
+        sgAtlasData_Final.Cells[3, j] := sgPhaseData_Filter_Distance.Cells[1, i];  // P Phase
+        sgAtlasData_Final.Cells[7, j] := sgPhaseData_Filter_Distance.Cells[2, i];  // Polarity
+        sgAtlasData_Final.Cells[4, j] := sgPhaseData_Filter_Distance.Cells[3, i];  // P arrival to P Time
+        sgAtlasData_Final.Cells[5, j] := sgPhaseData_Filter_Distance.Cells[4, i];  // S Phase
+        sgAtlasData_Final.Cells[6, j] := sgPhaseData_Filter_Distance.Cells[5, i];  // S arrival to S Time
+        sgAtlasData_Final.Cells[12, j] := sgPhaseData_Filter_Distance.Cells[7, i]; // Duration
+        found := True;
+        Break; // Stop searching once the station is found and updated
+      end;
+    end;
+
+    // Step 4: If the station was not found, add it as a new row in sgAtlasData_Final
+    if not found then
+    begin
+      sgAtlasData_Final.RowCount := CombinedRowCount + 1; // Increase row count to add a new row
+      sgAtlasData_Final.Cells[1, CombinedRowCount] := stationValuePhase;           // Station
+      sgAtlasData_Final.Cells[3, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[1, i];  // P Phase
+      sgAtlasData_Final.Cells[7, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[2, i];  // Polarity
+      sgAtlasData_Final.Cells[4, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[3, i];  // P arrival to P Time
+      sgAtlasData_Final.Cells[5, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[4, i];  // S Phase
+      sgAtlasData_Final.Cells[6, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[5, i];  // S arrival to S Time
+      sgAtlasData_Final.Cells[12, CombinedRowCount] := sgPhaseData_Filter_Distance.Cells[7, i]; // Duration
+
+      // Update the row count tracker
+      Inc(CombinedRowCount);
+    end;
+  end;
+
+  // Step 5: Sort the data in sgAtlasData_Final by P Time after all updates and insertions
+  SortAtlasDataByPTime(sgAtlasData_Final);
+end;
+
+procedure TfrmMain.btnDateTime_ShortFormatClick(Sender: TObject);
+var
+  InputDateTime: TDateTime;
+  OutputString: string;
+begin
+  // Example input datetime (use your actual datetime)
+  InputDateTime := StrToDateTime('2020-01-02 00:05:21.5428');
+
+  // Call the conversion procedure
+  UTILS_DateTime.ConvertDateTimeToCustomFormat(InputDateTime, OutputString);
+
+  // Output the result
+  ShowMessage(OutputString);  // Should display 000511.41 (approx)
+end;
+
+procedure TfrmMain.btnDBClick(Sender: TObject);
+begin
+  btnEQeventsClick(nil);
+  btnExtract_DateTimeClick(nil);
+end;
+
+procedure TfrmMain.btnAtlasClick(Sender: TObject);
+begin
+  btnListAtlas_filesClick(nil);
+  btnFilter_timeClick(nil);
+  btnExtract_EQinfoClick(nil);
+  btnFilter_distanceClick(nil);
+  btnCombine_AtlasPSClick(nil);
+end;
+
+procedure TfrmMain.cdrvwEQ_events1Change(Sender: TObject);
+var
+  SelectedDate: TDateTime;
+  Year, Month, Day: Word;
+  MaxMagnitude: Double;
+begin
+  // Get the selected date from the TCalendarView
+  SelectedDate := cdrvwEQ_events1.Date;
+
+  // Extract year, month, and day as integers
+  DecodeDate(SelectedDate, Year, Month, Day);
+
+  // Get the maximum magnitude from the LabeledEdit
+  MaxMagnitude := StrToFloat(ledMag_max.Text);
+
+  // Clear previous rows (except for the header)
+  sgEQ_events.RowCount := 1;
+
+  // Pass the year, month, day, and max magnitude to the procedure
+//  BrowseEarthquakeData(Year, Month, Day, sgEQ_events, lblProgramPath.Caption, MaxMagnitude);
+  BrowseEarthquakeData(Year, Month, Day, lvEQ_events, lblProgramPath.Caption, MaxMagnitude);
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  lblProgramPath.Caption := ExtractFilePath(Application.ExeName);
+
+  cdrvwEQ_events1.OnChange := cdrvwEQ_events1Change;
+
+  btnStationsClick(nil);
+end;
+
+end.
+
+------------------------------------------------
+unit UTILS_ATLAS;
+
+interface
+
+uses
+  ExtCtrls, DateUtils, Grids, Classes, SysUtils, StrUtils, Dialogs, Vcl.StdCtrls;  // Add necessary units
+
+// Declare the procedure in the interface section
+
+  procedure Filter_Time(Memo: TMemo; InputDate, InputTime: string; CutoffMinutes: Integer; OutputMemo: TMemo);
+
+  procedure Filter_Distance(sgAtlas_data, sgSOEPD_stations, sgAtlasData_final: TStringGrid;
+    ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+
+  procedure ExtractSelectedAtlasParametersToGrid(Memo: TMemo; Grid: TStringGrid);
+
+  procedure Combine_AtlasPS(SourceGrid, TargetGrid: TStringGrid);
+
+implementation
+
+uses UTILS_Math;
+
+procedure Filter_Time(Memo: TMemo; InputDate, InputTime: string; CutoffMinutes: Integer; OutputMemo: TMemo);
+var
+  FileName: string;
+  FileList: TStringList;
+  FileContent: TStringList;
+  Fields: TStringList;
+  i, j: Integer;
+  Line, DatePart, TimePart: string;
+  InputDateTime, FileDateTime: TDateTime;
+  ParsedDate, ParsedTime: TDateTime;
+  FormatSettings: TFormatSettings;
+begin
+  // Set up custom format settings for date and time parsing
+  FormatSettings := TFormatSettings.Create;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy-mm-dd';
+  FormatSettings.TimeSeparator := ':';
+  FormatSettings.ShortTimeFormat := 'hh:nn';
+
+  // Initialize TStringLists to hold the file names and contents
+  FileList := TStringList.Create;
+  FileContent := TStringList.Create;
+  Fields := TStringList.Create;
+
+  try
+    // Copy the lines from the memo to FileList (containing file paths)
+    FileList.Assign(Memo.Lines);
+
+    // Clear the output memo before adding new content
+    OutputMemo.Lines.Clear;
+
+    // Combine input date and time into a TDateTime using custom format settings
+    if not TryStrToDate(InputDate, ParsedDate, FormatSettings) then
+      raise Exception.Create('Invalid input date format');
+    if not TryStrToTime(InputTime, ParsedTime, FormatSettings) then
+      raise Exception.Create('Invalid input time format');
+    InputDateTime := ParsedDate + ParsedTime;
+
+    // Iterate over each file path listed in the memo
+    for i := 0 to FileList.Count - 1 do
+    begin
+      FileName := FileList[i];  // Get the file name (path)
+
+      // Load the content of the file into FileContent
+      FileContent.LoadFromFile(FileName);
+
+      // Iterate over each line of the file content to search for "Phase P"
+      for j := 0 to FileContent.Count - 1 do
+      begin
+        Line := FileContent[j];
+
+        // Skip comment lines (starting with #)
+        if Line.StartsWith('#') then
+          Continue;
+
+        // Use TStringList.DelimitedText to parse the CSV line
+        Fields.Delimiter := ',';
+        Fields.StrictDelimiter := True;  // Strict to avoid space issues
+        Fields.DelimitedText := Line;
+
+        // Ensure there are enough fields, and that the phase type is "P"
+        if (Fields.Count >= 7) and (Fields[5] = 'P') then
+        begin
+          // Extract the date part (YYYY-MM-DD) and time part (HH:MM:SS.FFFFF)
+          DatePart := Copy(Fields[6], 1, 10);   // Extract '2020-01-02'
+          TimePart := Copy(Fields[6], 12, 8);   // Extract '11:28:00' (HH:MM:SS format)
+
+          // Combine extracted date and time into a TDateTime using custom format settings
+          if not TryStrToDate(DatePart, ParsedDate, FormatSettings) then
+            Continue;  // Skip invalid dates
+          if not TryStrToTime(TimePart, ParsedTime, FormatSettings) then
+            Continue;  // Skip invalid times
+
+          FileDateTime := ParsedDate + ParsedTime;
+
+          // Check if the file date/time is within the specified cutoff minutes after the input date/time
+          if (FileDateTime >= InputDateTime) and (FileDateTime <= IncMinute(InputDateTime, CutoffMinutes)) then
+          begin
+            // If a match is found, add the filename to the memo
+            OutputMemo.Lines.Add(FileName);
+          end;
+
+          // Stop after finding the first Phase P since we assume there is always one
+          Break;
+        end;
+      end;
+    end;
+
+  finally
+    // Free the file content and list objects
+    FileContent.Free;
+    FileList.Free;
+    Fields.Free;
+  end;
+end;
+
+procedure Filter_Distance(sgAtlas_data, sgSOEPD_stations, sgAtlasData_final: TStringGrid;
+  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+var
+  i, j, finalRow: Integer;
+  stationValue, searchValue: string;
+  found: Boolean;
+  stationLat, stationLon, stationElev: Double;
+  eqLat, eqLon, eqDep, eqMag: Double;
+  surfaceDistance, elevationDiff, hypoDistance: Double;
+begin
+  // Parse earthquake location and depth from labeled edits
+  eqLat := StrToFloat(ledEQ_Lat.Text);
+  eqLon := StrToFloat(ledEQ_Lon.Text);
+  eqDep := StrToFloat(ledEQ_Dep.Text);
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  // Initialize the final grid with the same columns as sgAtlas_data
+  sgAtlasData_final.ColCount := sgAtlas_data.ColCount;  // Ensure the column count matches
+  sgAtlasData_final.RowCount := 1;  // Start with 1 row for headers (if needed)
+
+  // Copy the headers from sgAtlas_data to sgAtlasData_final
+  for i := 0 to sgAtlas_data.ColCount - 1 do
+  begin
+    sgAtlasData_final.Cells[i, 0] := sgAtlas_data.Cells[i, 0];
+  end;
+
+  // Iterate through sgAtlas_data rows (starting from 1, assuming row 0 is header)
+  for i := 1 to sgAtlas_data.RowCount - 1 do
+  begin
+    // Get the first 3 characters of the station value from the second column (index 1) of sgAtlas_data
+    stationValue := LeftStr(sgAtlas_data.Cells[1, i], 3);
+
+    // Search for the station value in sgSOEPD_stations, specifically in the first column (index 0)
+    found := False;
+    for j := 1 to sgSOEPD_stations.RowCount - 1 do
+    begin
+      // Get the station_code from the first column (index 0) of sgSOEPD_stations
+      searchValue := sgSOEPD_stations.Cells[0, j];
+
+      if stationValue = searchValue then
+      begin
+        // Station found in sgSOEPD_stations
+        found := True;
+
+        // Get station coordinates and elevation
+        stationLat := StrToFloat(sgSOEPD_stations.Cells[1, j]);  // Latitude is in column 1
+        stationLon := StrToFloat(sgSOEPD_stations.Cells[2, j]);  // Longitude is in column 2
+        stationElev := StrToFloat(sgSOEPD_stations.Cells[3, j]); // Elevation is in column 3
+
+        // Calculate the surface distance using the Haversine formula
+        surfaceDistance := Haversine(eqLat, eqLon, stationLat, stationLon);
+
+        // Compute the elevation difference (in km)
+        elevationDiff := (eqDep - stationElev) / 1000.0;
+
+        // Calculate the 3D hypocentral distance using Pythagorean theorem
+        hypoDistance := Sqrt(Sqr(surfaceDistance) + Sqr(elevationDiff));
+
+        // Check if the hypocentral distance is within the cutoff distance
+        if hypoDistance <= Cutoff_Distance then
+        begin
+          // Add the station to the sgAtlasData_final grid
+          finalRow := sgAtlasData_final.RowCount;  // Get current row count
+          sgAtlasData_final.RowCount := finalRow + 1;  // Increment row count
+
+          // Copy the row data from sgAtlas_data to sgAtlasData_final (same format)
+          for var col := 0 to sgAtlas_data.ColCount - 1 do
+          begin
+            sgAtlasData_final.Cells[col, finalRow] := sgAtlas_data.Cells[col, i];
+          end;
+
+          // Optionally, you can add the calculated hypocentral distance in an extra column if needed
+          // (Assuming the last column can hold the distance value if needed)
+          // sgAtlasData_final.Cells[sgAtlasData_final.ColCount - 1, finalRow] := FloatToStr(hypoDistance);
+        end;
+
+        Break;  // Exit the search loop once found
+      end;
+    end;
+  end;
+end;
+
+procedure ExtractSelectedAtlasParametersToGrid(Memo: TMemo; Grid: TStringGrid);
+var
+  FileName: string;
+  FileList: TStringList;
+  FileContent: TStringList;
+  Fields: TStringList;
+  i, j, Row: Integer;
+  Line, Station: string;
+  CodaTime: string;
+begin
+  // Initialize TStringLists to hold the file names and contents
+  FileList := TStringList.Create;
+  FileContent := TStringList.Create;
+  Fields := TStringList.Create;
+  try
+    // Copy the lines from the memo (filtered ATLAS files) to FileList
+    FileList.Assign(Memo.Lines);
+    // Clear the grid and set up the headers
+    Grid.RowCount := 1; // Reset row count (header row is 0)
+    Grid.ColCount := 11; // Increased number of columns to include Coda Time
+    Grid.Cells[0, 0] := 'Network';
+    Grid.Cells[1, 0] := 'Station';
+    Grid.Cells[2, 0] := 'Channel';
+    Grid.Cells[3, 0] := 'Phase';
+    Grid.Cells[4, 0] := 'Time';
+    Grid.Cells[5, 0] := 'First Motion';
+    Grid.Cells[6, 0] := 'Onset';
+    Grid.Cells[7, 0] := 'Weight Code';
+    Grid.Cells[8, 0] := 'User';
+    Grid.Cells[9, 0] := 'Coda Time';  // New column for Coda Time
+    Grid.Cells[10, 0] := 'Filename';  // New column for Filename
+    // Iterate over each filtered file path listed in the memo
+    for i := 0 to FileList.Count - 1 do
+    begin
+      FileName := FileList[i];  // Get the file name (path)
+      try
+        // Load the content of the file into FileContent
+        FileContent.LoadFromFile(FileName);
+      except
+        on E: Exception do
+        begin
+          // Handle any file loading errors (optional)
+          ShowMessage('Error loading file: ' + FileName + ' - ' + E.Message);
+          Continue;
+        end;
+      end;
+      // Iterate over each line of the file content to extract parameters
+      CodaTime := '';  // Reset Coda Time for each file
+      for j := 0 to FileContent.Count - 1 do
+      begin
+        Line := FileContent[j];
+        // Skip comment lines (starting with #)
+        if Line.StartsWith('#') then
+          Continue;
+        // Use TStringList.DelimitedText to parse the CSV line
+        Fields.Delimiter := ',';
+        Fields.StrictDelimiter := True;  // Strict to avoid space issues
+        Fields.DelimitedText := Line;
+        // Process "phase" records from the file
+        if (Fields[0] = 'phase') and (Fields.Count >= 11) then
+        begin
+          // Add a new row in the grid for each line that has the correct fields
+          Row := Grid.RowCount;
+          Grid.RowCount := Row + 1;
+          // Populate the grid with the extracted parameters
+          Grid.Cells[0, Row] := Fields[1];  // Network
+          Grid.Cells[1, Row] := Fields[2];  // Station
+          Grid.Cells[2, Row] := Fields[3];  // Channel
+          Grid.Cells[3, Row] := Fields[5];  // Phase
+          Grid.Cells[4, Row] := Fields[6];  // Time
+          Grid.Cells[5, Row] := Fields[7];  // First Motion (can be empty)
+          Grid.Cells[6, Row] := Fields[8];  // Onset
+          Grid.Cells[7, Row] := Fields[9];  // Weight Code
+          Grid.Cells[8, Row] := Fields[10]; // User
+          // Populate the Coda Time if found (if not found yet, it will be empty)
+          Grid.Cells[9, Row] := CodaTime;   // Coda Time
+          Grid.Cells[10, Row] := FileName;  // Add Filename (only the file name)
+        end;
+        // Process "coda" records from the file
+        if (Fields[0] = 'coda') and (Fields.Count >= 6) then
+        begin
+          // Extract the coda time (assume station matches and should be applied to the next phase)
+          CodaTime := Fields[5];  // Extract the coda time
+          Grid.Cells[9, Row] := CodaTime;   // Coda Time
+        end;
+      end;
+    end;
+  finally
+    // Free the file content and list objects
+    FileContent.Free;
+    FileList.Free;
+    Fields.Free;
+  end;
+end;
+
+procedure Combine_AtlasPS(SourceGrid, TargetGrid: TStringGrid);
+var
+  i, NewRow: Integer;
+  Station, CodaTime, CODA : string;
+  FoundP, FoundS: Boolean;
+  PhaseP, PhaseS: TStringList;
+begin
+  PhaseP := TStringList.Create;
+  PhaseS := TStringList.Create;
+  try
+    // Initialize the target grid with the desired structure
+    TargetGrid.ColCount := 14; // Adjust column count to include Coda Time
+    TargetGrid.RowCount := 1;  // Start with the header row
+
+    // Set up the headers for the target grid
+    TargetGrid.Cells[0, 0] := 'Network';
+    TargetGrid.Cells[1, 0] := 'Station';
+    TargetGrid.Cells[2, 0] := 'Channel';
+    TargetGrid.Cells[3, 0] := 'P Phase';
+    TargetGrid.Cells[4, 0] := 'P Time';
+    TargetGrid.Cells[5, 0] := 'S Phase';
+    TargetGrid.Cells[6, 0] := 'S Time';
+    TargetGrid.Cells[7, 0] := 'First Motion';
+    TargetGrid.Cells[8, 0] := 'Onset';
+    TargetGrid.Cells[9, 0] := 'Weight Code';
+    TargetGrid.Cells[10, 0] := 'User';
+    TargetGrid.Cells[11, 0] := 'Coda Time';  // Coda Time column
+    TargetGrid.Cells[12, 0] := 'CODA';  // Coda Time column
+    TargetGrid.Cells[13, 0] := 'Filename';
+
+    i := 1;  // Start from the first row after the header
+    while i < SourceGrid.RowCount do
+    begin
+      // Clear the lists for storing P and S phases
+      PhaseP.Clear;
+      PhaseS.Clear;
+
+      // Get the current station
+      Station := SourceGrid.Cells[1, i];
+      FoundP := False;
+      FoundS := False;
+
+      // Check if the current row contains a P phase and extract its Coda Time
+      if SourceGrid.Cells[3, i] = 'P' then
+      begin
+        PhaseP.Text := SourceGrid.Rows[i].Text;
+        CodaTime := SourceGrid.Cells[9, i];  // Coda Time from column 11 (adjust if necessary)
+        FoundP := True;
+      end;
+
+      // Look ahead to the next row to check if it's the same station (for S phase)
+      if (i + 1 < SourceGrid.RowCount) and (SourceGrid.Cells[1, i + 1] = Station) then
+      begin
+        // If the next row contains the S phase, process it and overwrite the Coda Time
+        if SourceGrid.Cells[3, i + 1] = 'S' then
+        begin
+          PhaseS.Text := SourceGrid.Rows[i + 1].Text;
+          CodaTime := SourceGrid.Cells[9, i + 1];  // Overwrite Coda Time from the S phase row
+          FoundS := True;
+          Inc(i);  // Skip the next row since we've processed the S phase
+        end;
+      end;
+
+      // Add a new row in the target grid for each station
+      NewRow := TargetGrid.RowCount;
+      TargetGrid.RowCount := NewRow + 1;
+
+      // Populate the new row with extracted data (correct column mapping)
+      TargetGrid.Cells[0, NewRow] := PhaseP[0]; // Network
+      TargetGrid.Cells[1, NewRow] := PhaseP[1]; // Station
+      TargetGrid.Cells[2, NewRow] := PhaseP[2]; // Channel
+
+      // Populate the P phase data
+      if FoundP then
+      begin
+        TargetGrid.Cells[3, NewRow] := 'P';            // P Phase
+        TargetGrid.Cells[4, NewRow] := PhaseP[4];      // P Time
+      end;
+
+      // Populate the S phase data if found
+      if FoundS then
+      begin
+        TargetGrid.Cells[5, NewRow] := 'S';            // S Phase
+        TargetGrid.Cells[6, NewRow] := PhaseS[4];      // S Time
+      end;
+
+      // Populate additional data (First Motion, Onset, Weight Code, User, Coda Time, Filename)
+      TargetGrid.Cells[7, NewRow] := PhaseP[5];        // First Motion
+      TargetGrid.Cells[8, NewRow] := PhaseP[6];        // Onset
+      TargetGrid.Cells[9, NewRow] := PhaseP[7];        // Weight Code
+      TargetGrid.Cells[10, NewRow] := PhaseP[8];       // User
+      TargetGrid.Cells[11, NewRow] := CodaTime;        // Coda Time
+      TargetGrid.Cells[13, NewRow] := PhaseP[10];       // Filename
+
+      if Trim(CodaTime) <> '' then
+        CODA := UTILS_Math.ComputeCoda(PhaseP[4], CodaTime)  // Call ComputeCoda from UTILS_Math
+      else
+        CODA := ''; // If there's no valid Coda Time, leave it blank
+
+      TargetGrid.Cells[12, NewRow] := CODA;       // CODA
+
+      // Move to the next station
+      Inc(i);
+    end;
+
+  finally
+    PhaseP.Free;
+    PhaseS.Free;
+  end;
+end;
+
+end.
+
+------------------------------------------------
+unit UTILS_Math;
+
+interface
+
+uses
+  SysUtils, System.StrUtils, DateUtils, Math;
+
+function ComputeCoda(sDateTime_P, sDateTime_C: string): string;
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+
+implementation
+
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+const
+  R = 6371; // Earth's radius in kilometers
+var
+  dLat, dLon, a, c: Double;
+begin
+  dLat := DegToRad(lat2 - lat1);
+  dLon := DegToRad(lon2 - lon1);
+
+  a := Sin(dLat / 2) * Sin(dLat / 2) + Cos(DegToRad(lat1)) * Cos(DegToRad(lat2)) * Sin(dLon / 2) * Sin(dLon / 2);
+  c := 2 * ArcTan2(Sqrt(a), Sqrt(1 - a));
+
+  Result := R * c; // Distance in kilometers
+end;
+
+function ComputeCoda(sDateTime_P, sDateTime_C: string): string;
+var
+  yrP, monP, dayP: integer;
+  yrC, monC, dayC: integer;
+  dtDateTime_P, dtDate_P, dtTime_P: TDateTime;
+  dtDateTime_C, dtDate_C, dtTime_C: TDateTime;
+  s: string;
+begin
+  // Extract time and date from P phase
+  s := Trim(Copy(sDateTime_P, 12, 8)); // Time part for P phase
+  dtTime_P := StrToTime(s);
+
+  yrP := StrToInt(LeftStr(sDateTime_P, 4));  // Year
+  monP := StrToInt(Copy(sDateTime_P, 6, 2)); // Month
+  dayP := StrToInt(Copy(sDateTime_P, 9, 2)); // Day
+  dtDate_P := EncodeDate(yrP, monP, dayP);   // Date
+  dtDateTime_P := dtDate_P + dtTime_P;       // Full DateTime for P phase
+
+  // Extract time and date from Coda time
+  s := Trim(Copy(sDateTime_C, 12, 8)); // Time part for Coda
+  dtTime_C := StrToTime(s);
+
+  yrC := StrToInt(LeftStr(sDateTime_C, 4));  // Year
+  monC := StrToInt(Copy(sDateTime_C, 6, 2)); // Month
+  dayC := StrToInt(Copy(sDateTime_C, 9, 2)); // Day
+  dtDate_C := EncodeDate(yrC, monC, dayC);   // Date
+  dtDateTime_C := dtDate_C + dtTime_C;       // Full DateTime for Coda
+
+  // Calculate the seconds difference between P phase and Coda time
+  Result := FloatToStr(SecondsBetween(dtDateTime_C, dtDateTime_P));
+end;
+
+end.
+
+------------------------------------------------
+unit UTILS_CombineData;
+
+interface
+
+uses
+  Vcl.Grids, SysUtils, StrUtils, Vcl.StdCtrls, Classes;
+
+procedure SortAtlasDataByPTime(Grid: TStringGrid);
+procedure CombineAndUpdateAtlasData(SourceGrid, TargetGrid: TStringGrid);
+
+implementation
+
+uses EQPX_1;
+
+procedure SortAtlasDataByPTime(Grid: TStringGrid);
+var
+  i, j: Integer;
+  tempRow: TStringList;
+begin
+  // Create a temporary TStringList to hold row values during swapping
+  tempRow := TStringList.Create;
+  try
+    // Use a simple bubble sort algorithm to sort by P Time (ascending order)
+    for i := 1 to Grid.RowCount - 2 do
+    begin
+      for j := i + 1 to Grid.RowCount - 1 do
+      begin
+        // Compare P Time values between row i and row j
+        if Grid.Cells[4, i] > Grid.Cells[4, j] then
+        begin
+          // Swap rows i and j
+          tempRow.Assign(Grid.Rows[i]);
+          Grid.Rows[i].Assign(Grid.Rows[j]);
+          Grid.Rows[j].Assign(tempRow);
+        end;
+      end;
+    end;
+  finally
+    tempRow.Free;
+  end;
+end;
+
+procedure CombineAndUpdateAtlasData(SourceGrid, TargetGrid: TStringGrid);
+var
+  i, j, CombinedRowCount: Integer;
+  stationValuePhase, stationValueAtlas: string;
+  found: Boolean;
+begin
+  // Step 1: Initialize CombinedRowCount with the current row count of TargetGrid
+  CombinedRowCount := TargetGrid.RowCount;
+
+  // Step 2: Iterate through each row in SourceGrid to insert or update data
+  for i := 1 to SourceGrid.RowCount - 1 do
+  begin
+    // Get the station value from SourceGrid
+    stationValuePhase := SourceGrid.Cells[0, i]; // Assuming station column is at index 0
+
+    found := False;
+
+    // Step 3: Check if the station already exists in TargetGrid
+    for j := 1 to TargetGrid.RowCount - 1 do
+    begin
+      stationValueAtlas := TargetGrid.Cells[1, j]; // Assuming station column is at index 1 in TargetGrid
+
+      if stationValuePhase = stationValueAtlas then
+      begin
+        // Station found, update the existing row
+        TargetGrid.Cells[3, j] := SourceGrid.Cells[1, i];  // P Phase
+        TargetGrid.Cells[7, j] := SourceGrid.Cells[2, i];  // Polarity
+        TargetGrid.Cells[4, j] := SourceGrid.Cells[3, i];  // P arrival to P Time
+        TargetGrid.Cells[5, j] := SourceGrid.Cells[4, i];  // S Phase
+        TargetGrid.Cells[6, j] := SourceGrid.Cells[5, i];  // S arrival to S Time
+        TargetGrid.Cells[12, j] := SourceGrid.Cells[7, i]; // Duration
+        found := True;
+        Break; // Stop searching once the station is found and updated
+      end;
+    end;
+
+    // Step 4: If the station was not found, add it as a new row in TargetGrid
+    if not found then
+    begin
+      TargetGrid.RowCount := CombinedRowCount + 1; // Increase row count to add a new row
+      TargetGrid.Cells[1, CombinedRowCount] := stationValuePhase;           // Station
+      TargetGrid.Cells[3, CombinedRowCount] := SourceGrid.Cells[1, i];  // P Phase
+      TargetGrid.Cells[7, CombinedRowCount] := SourceGrid.Cells[2, i];  // Polarity
+      TargetGrid.Cells[4, CombinedRowCount] := SourceGrid.Cells[3, i];  // P arrival to P Time
+      TargetGrid.Cells[5, CombinedRowCount] := SourceGrid.Cells[4, i];  // S Phase
+      TargetGrid.Cells[6, CombinedRowCount] := SourceGrid.Cells[5, i];  // S arrival to S Time
+      TargetGrid.Cells[12, CombinedRowCount] := SourceGrid.Cells[7, i]; // Duration
+
+      // Update the row count tracker
+      Inc(CombinedRowCount);
+    end;
+  end;
+
+  // Step 5: Sort the data in TargetGrid by P Time after all updates and insertions
+  SortAtlasDataByPTime(TargetGrid);
+end;
+
+end.
+-------------------------------
+unit UTILS_DB;
+
+interface
+
+uses
+  ComCtrls, Grids, System.SysUtils, System.Classes, Data.DB, Data.SqlExpr, FireDAC.Comp.Client, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys.SQLite, FireDAC.DApt, FireDAC.Stan.ExprFuncs;
+
+procedure BrowseEarthquakeData(const Year, Month, Day: Integer; ListView: TListView; ProgramPath: string; MaxMagnitude: Double);
+
+implementation
+
+uses EQPX_1;
+
+procedure BrowseEarthquakeData(const Year, Month, Day: Integer; ListView: TListView; ProgramPath: string; MaxMagnitude: Double);
+var
+  FDConnection: TFDConnection;
+  FDQuery: TFDQuery;
+  SQLQuery: string;
+  DateFilter: string;
+  DatabasePath: string;
+  DateTimeValue, IntensityAccount: string;
+  Magnitude, Latitude, Longitude: Double;
+  Depth: Integer;  // Depth as integer
+  ListItem: TListItem;
+  DatePart, TimePart: string;
+begin
+  FDConnection := TFDConnection.Create(nil);
+  FDQuery := TFDQuery.Create(nil);
+  try
+    // Construct the database path
+    DatabasePath := ProgramPath + 'DB\EQCatalogue_web.sdb';
+
+    // Setup SQLite connection
+    FDConnection.DriverName := 'SQLite';
+    FDConnection.Params.Database := DatabasePath;
+    FDConnection.LoginPrompt := False;
+    FDConnection.Connected := True;
+
+    FDQuery.Connection := FDConnection;
+
+    // Format date filter
+    DateFilter := Format('%.4d-%.2d-%.2d', [Year, Month, Day]);
+
+    // SQL query to filter data by date, magnitude and extract intensity
+    SQLQuery := 'SELECT datetime, ms, latitude, longitude, depth, intensity_account FROM EarthquakeData ' +
+                'WHERE datetime LIKE :DateFilter AND ms < :MaxMagnitude';
+    FDQuery.SQL.Text := SQLQuery;
+    FDQuery.ParamByName('DateFilter').AsString := DateFilter + '%';
+    FDQuery.ParamByName('MaxMagnitude').AsFloat := MaxMagnitude;
+
+    // Execute the query
+    FDQuery.Open;
+
+    // Clear the ListView before populating new data
+    ListView.Items.Clear;
+
+    // Populate the ListView with data
+    while not FDQuery.Eof do
+    begin
+      DateTimeValue := FDQuery.FieldByName('datetime').AsString;
+      Magnitude := FDQuery.FieldByName('ms').AsFloat;
+      Latitude := FDQuery.FieldByName('latitude').AsFloat;    // Fetch latitude
+      Longitude := FDQuery.FieldByName('longitude').AsFloat;  // Fetch longitude
+      Depth := FDQuery.FieldByName('depth').AsInteger;        // Fetch depth as integer
+      IntensityAccount := FDQuery.FieldByName('intensity_account').AsString;  // Intensity description
+
+      // Split the datetime string into date and time parts
+      DatePart := Copy(DateTimeValue, 1, 10);  // Extract 'YYYY-MM-DD'
+      TimePart := Copy(DateTimeValue, 12, 8);  // Extract 'HH:NN:SS'
+
+      // Add a new item to the ListView
+      ListItem := ListView.Items.Add;
+      ListItem.Caption := '';  // Leave the checkbox column blank
+      ListItem.SubItems.Add(DatePart);  // Set the date in the second column
+      ListItem.SubItems.Add(TimePart);  // Set the time in the third column
+      ListItem.SubItems.Add(FormatFloat('0.0', Magnitude));  // Set the magnitude in the fourth column
+      ListItem.SubItems.Add(FormatFloat('0.000', Latitude));  // Latitude with 3 decimal places
+      ListItem.SubItems.Add(FormatFloat('0.000', Longitude)); // Longitude with 3 decimal places
+      ListItem.SubItems.Add(IntToStr(Depth));                 // Depth as integer
+      ListItem.SubItems.Add(IntensityAccount);                // Intensity account (description)
+
+      // Check the checkbox by default
+      ListItem.Checked := True;  // This line ensures the checkbox is checked
+
+      FDQuery.Next;
+    end;
+
+  finally
+    FDQuery.Free;
+    FDConnection.Free;
+  end;
+end;
+
+end.
+---------------------------------------
+unit UTILS_DateTime;
+
+interface
+
+uses
+  Dialogs , SysUtils , Vcl.Mask, Vcl.ExtCtrls, ComCtrls, StdCtrls; // Include necessary units for TListView and TLabeledEdit
+
+procedure ConvertDateTimeToCustomFormat(InputDateTime: TDateTime; var OutputString: string);
+procedure ConvertDateTime_format(DateTime_format1 : string);
+// Declare the ExtractCheckedDateTime procedure
+procedure ExtractCheckedDateTime(ListView: TListView; ledEQ_datex, ledEQ_timex: TLabeledEdit);
+
+procedure ExtractCheckedDateTime2(ListView: TListView;
+  ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep: TLabeledEdit);
+
+implementation
+
+procedure ConvertDateTimeToCustomFormat(InputDateTime: TDateTime; var OutputString: string);
+var
+  DateTimeMilliseconds: Double;
+begin
+  // Extract the time part of the datetime as a fraction of the day
+  DateTimeMilliseconds := Frac(InputDateTime) * 86400;  // 86400 seconds in a day
+
+  // Format the DateTime as "HHMMSS.milliseconds"
+  OutputString := FormatFloat('000000.00', DateTimeMilliseconds);
+end;
+
+procedure ConvertDateTime_format(DateTime_format1 : string);
+var
+  OriginalDateTime: TDateTime;
+  OriginalValue: Double;
+  FormattedDateTime: string;
+  FormattedValue: string;
+begin
+  // Example values
+  OriginalDateTime := StrToDateTime(DateTime_format1);
+  OriginalValue := 532.28; // Example value with leading zeros
+
+  // Format the DateTime as 'yyyy-mm-dd hh:nn:ss'
+  FormattedDateTime := FormatDateTime('yyyy-mm-dd hh:nn:ss', OriginalDateTime);
+
+  // Format the floating number without leading zeros
+  FormattedValue := FormatFloat('0.00', OriginalValue);
+
+  // Output the results
+  ShowMessage('Formatted DateTime: ' + FormattedDateTime);
+  ShowMessage('Formatted Value: ' + FormattedValue);
+end;
+
+procedure ExtractCheckedDateTime(ListView: TListView; ledEQ_datex, ledEQ_timex: TLabeledEdit);
+var
+  i: Integer;
+  DateValue, TimeValue: string;
+begin
+  // Iterate over all items in the ListView
+  for i := 0 to ListView.Items.Count - 1 do
+  begin
+    // Check if the item is checked (selected)
+    if ListView.Items[i].Checked then
+    begin
+      // Extract Date and Time from SubItems
+      DateValue := ListView.Items[i].SubItems[0];  // Date is in the first SubItem
+      TimeValue := ListView.Items[i].SubItems[1];  // Time is in the second SubItem
+
+      // Set the extracted Date and Time to the labeled edits
+      ledEQ_datex.Text := DateValue;  // Set the date in ledEQ_datex
+      ledEQ_timex.Text := Copy(TimeValue, 1, 5);  // Set the time (HH:MM format) in ledEQ_timex
+
+      // Stop after the first checked item, if you only need one
+      Break;
+    end;
+  end;
+end;
+
+procedure ExtractCheckedDateTime2(ListView: TListView;
+  ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep: TLabeledEdit);
+var
+  i: Integer;
+  DateValue, TimeValue, MagValue, LatValue, LonValue, DepValue: string;
+begin
+  // Iterate over all items in the ListView
+  for i := 0 to ListView.Items.Count - 1 do
+  begin
+    // Check if the item is checked (selected)
+    if ListView.Items[i].Checked then
+    begin
+      // Extract Date and Time from SubItems
+      DateValue := ListView.Items[i].SubItems[0];  // Date is in the first SubItem
+      TimeValue := ListView.Items[i].SubItems[1];  // Time is in the second SubItem
+
+      // Extract Latitude, Longitude, and Depth from SubItems
+      MagValue := ListView.Items[i].SubItems[2];   // Magnitude in the sixth SubItem
+      LatValue := ListView.Items[i].SubItems[3];  // Latitude in the third SubItem
+      LonValue := ListView.Items[i].SubItems[4];  // Longitude in the fourth SubItem
+      DepValue := ListView.Items[i].SubItems[5];  // Depth in the fifth SubItem
+
+      // Set the extracted Date and Time to the labeled edits
+      ledEQ_datex.Text := DateValue;  // Set the date in ledEQ_datex
+      ledEQ_timex.Text := Copy(TimeValue, 1, 5);  // Set the time (HH:MM format) in ledEQ_timex
+
+      // Set the extracted Latitude, Longitude, and Depth to the respective labeled edits
+      ledEQ_Mag.Text := MagValue;  // Set the magnitude in ledEQ_Mag
+      ledEQ_Lat.Text := LatValue;  // Set the latitude in ledEQ_Lat
+      ledEQ_Lon.Text := LonValue;  // Set the longitude in ledEQ_Lon
+      ledEQ_Dep.Text := DepValue;  // Set the depth in ledEQ_Dep
+
+      // Stop after the first checked item, if you only need one
+      Break;
+    end;
+  end;
+end;
+
+end.
+---------------------------------
+unit UTILS_PhaseData;
+
+interface
+
+uses
+  ComObj, Dialogs, SysUtils, DateUtils, Variants, Vcl.Grids,
+  IOUtils, StrUtils, Classes, ExtCtrls;
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+procedure PhaseData_Filter_Time(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+
+procedure PhaseData_Filter_Distance(SourceGrid, StationGrid, TargetGrid: TStringGrid;
+  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+
+procedure PhaseData_Filter_Time2(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+
+implementation
+
+uses EQPX_1, UTILS_Math;
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+var
+  ExcelApp, Workbook, Worksheet: OleVariant;
+  FolderPath, SearchPattern, FilePath, TempFolder, CSVFilePath, WorksheetName: string;
+  Year: Word;
+  SearchRec: TSearchRec;
+  Found: Boolean;
+begin
+  // Extract the year from EQDate
+  Year := YearOf(EQDate);
+
+  // Construct the folder path using the year
+  FolderPath := IncludeTrailingPathDelimiter(ProgramPath) + 'DB\PHASEDATA\' + IntToStr(Year);
+
+  // Search for Excel files that start with "yyyy_mm" format and end with ".xlsx"
+  SearchPattern := FormatDateTime('yyyy_mm', EQDate) + '*.xlsx';  // Wildcard to find the file
+
+  // Initialize found flag
+  Found := False;
+
+  // Use FindFirst to search for files that match the pattern in the folder
+  if FindFirst(IncludeTrailingPathDelimiter(FolderPath) + SearchPattern, faAnyFile, SearchRec) = 0 then
+  begin
+    try
+      // Set the file path to the first match found
+      FilePath := IncludeTrailingPathDelimiter(FolderPath) + SearchRec.Name;
+      Found := True;
+    finally
+      FindClose(SearchRec);
+    end;
+  end;
+
+  // Check if we found the file
+  if not Found then
+  begin
+    ShowMessage('No matching file found for pattern: ' + SearchPattern);
+    Exit;
+  end;
+
+  // Construct the worksheet name based on the day of the month (e.g., Jan02)
+  WorksheetName := FormatDateTime('mmmdd', EQDate);  // 'mmmdd' gives the format like 'Jan02'
+
+  // Construct the TEMP folder path inside ProgramPath
+  TempFolder := IncludeTrailingPathDelimiter(ProgramPath) + 'TEMP';
+
+  // Ensure the TEMP folder exists, create it if necessary
+  if not DirectoryExists(TempFolder) then
+  begin
+    if not ForceDirectories(TempFolder) then
+    begin
+      ShowMessage('Failed to create TEMP folder at: ' + TempFolder);
+      Exit;
+    end;
+  end;
+
+  // Construct the full path for the CSV file (temp.csv)
+  CSVFilePath := IncludeTrailingPathDelimiter(TempFolder) + 'temp.csv';
+
+  try
+    // Start Excel application
+    ExcelApp := CreateOleObject('Excel.Application');
+    ExcelApp.Visible := False;  // Excel will run in the background
+
+    // Disable alerts to avoid any pop-ups during the save process
+    ExcelApp.DisplayAlerts := False;
+
+    // Open the workbook
+    Workbook := ExcelApp.Workbooks.Open(FilePath);
+
+    // Try to access the specified worksheet
+    try
+      Worksheet := Workbook.Worksheets[WorksheetName];
+      Worksheet.Activate;
+
+      // Save the worksheet as CSV
+      Worksheet.SaveAs(CSVFilePath, 6);  // 6 is the FileFormat for CSV
+
+//      ShowMessage('Worksheet successfully converted to CSV: ' + CSVFilePath);
+
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Error accessing worksheet: ' + E.Message);
+        Workbook.Close(False);
+        ExcelApp.Quit;
+        Exit;
+      end;
+    end;
+
+    // Close the workbook and quit Excel
+    Workbook.Close(False);
+    ExcelApp.Quit;
+
+  finally
+    // Re-enable alerts
+    ExcelApp.DisplayAlerts := True;
+
+    // Cleanup Excel references
+    Workbook := Unassigned;
+    ExcelApp := Unassigned;
+  end;
+end;
+
+// Procedure to load CSV data into TStringGrid
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+var
+  CSVFile: TextFile;
+  Line, CellData: string;
+  RowIndex, ColIndex: Integer;
+  Cells: TArray<string>;
+begin
+  // Open the CSV file for reading
+  AssignFile(CSVFile, CSVFilePath);
+  Reset(CSVFile);
+  try
+    // Initialize row index
+    RowIndex := 0;
+    // Read each line from the CSV file
+    while not Eof(CSVFile) do
+    begin
+      ReadLn(CSVFile, Line);
+      // Split the line into cells by commas
+      Cells := Line.Split([',']);
+      // Set the grid's row count dynamically
+      if RowIndex >= sgPhaseData.RowCount then
+        sgPhaseData.RowCount := RowIndex + 1;
+      // Set the grid's column count dynamically
+      if Length(Cells) > sgPhaseData.ColCount then
+        sgPhaseData.ColCount := Length(Cells);
+      // Fill the TStringGrid cells with data
+      for ColIndex := 0 to Length(Cells) - 1 do
+      begin
+        CellData := Cells[ColIndex];
+        sgPhaseData.Cells[ColIndex, RowIndex] := CellData;
+      end;
+      // Move to the next row
+      Inc(RowIndex);
+    end;
+  finally
+    CloseFile(CSVFile);
+  end;
+end;
+
+procedure PhaseData_Filter_Time(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+var
+  RowIndex, TargetRowIndex: Integer;
+  PArrivalTimeStr: string;
+  ParsedDate, ParsedTime, InputDateTime, GridDateTime: TDateTime;
+  FormatSettings: TFormatSettings;
+begin
+  // Set up custom format settings for date and time parsing
+  FormatSettings := TFormatSettings.Create;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy-mm-dd';
+  FormatSettings.TimeSeparator := ':';
+  FormatSettings.ShortTimeFormat := 'hh:mm';
+
+  // Parse the input date (yyyy-mm-dd) into TDateTime
+  if not TryStrToDate(InputDate, ParsedDate, FormatSettings) then
+    raise Exception.Create('Invalid input date format');
+
+  // Parse the input time (hh:mm) into TDateTime (only the fractional part will be used)
+  if not TryStrToTime(InputTime, ParsedTime, FormatSettings) then
+    raise Exception.Create('Invalid input time format');
+
+  // Combine the parsed date and time into a single TDateTime
+  InputDateTime := ParsedDate + Frac(ParsedTime);  // Frac extracts the time part
+
+  // Initialize TargetGrid (sgPhaseData2) and set the column count to match SourceGrid
+  TargetGrid.RowCount := 1; // Reset to 1 row to start adding filtered data
+  TargetGrid.ColCount := SourceGrid.ColCount;
+
+  // Loop through each row in the SourceGrid
+  TargetRowIndex := 1; // Start target row index at 1 since row 0 is typically the header
+  for RowIndex := 3 to SourceGrid.RowCount - 1 do
+//  for RowIndex := SourceGrid.FixedRows to SourceGrid.RowCount - 1 do
+  begin
+    // Assuming the "P arrival" time is in column 4 of the grid
+    PArrivalTimeStr := SourceGrid.Cells[3, RowIndex];  // Extract "P arrival" time part
+
+    // Check if "P arrival" is empty
+    if Trim(PArrivalTimeStr) = '' then Break;
+
+    // Convert "P arrival" time string (HHMMSS.FF) to TDateTime
+    try
+      GridDateTime := EncodeTime(
+        StrToInt(Copy(PArrivalTimeStr, 1, 2)),  // Hours
+        StrToInt(Copy(PArrivalTimeStr, 3, 2)),  // Minutes
+        StrToInt(Copy(PArrivalTimeStr, 5, 2)),  // Seconds
+        Round(StrToFloat('0.' + Copy(PArrivalTimeStr, 8, 2)) * 1000)  // Milliseconds
+      );
+    except
+      Continue;  // Skip invalid times
+    end;
+
+    // Combine the parsed date with the P arrival time
+    GridDateTime := ParsedDate + Frac(GridDateTime);
+
+    // Check if the grid "P arrival" time is within the specified cutoff minutes after the input time
+    if (GridDateTime >= InputDateTime) and (GridDateTime <= IncMinute(InputDateTime, CutoffMinutes)) then
+    begin
+      // If the row matches the filter criteria, copy it to the TargetGrid
+      TargetGrid.RowCount := TargetRowIndex + 1;  // Increase the row count in the target grid
+      TargetGrid.Rows[TargetRowIndex] := SourceGrid.Rows[RowIndex];  // Copy the entire row
+      Inc(TargetRowIndex);  // Move to the next row in the target grid
+    end;
+  end;
+end;
+
+procedure PhaseData_Filter_Distance(SourceGrid, StationGrid, TargetGrid: TStringGrid;
+  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+var
+  i, j, finalRow: Integer;
+  stationValue, searchValue: string;
+  found: Boolean;
+  stationLat, stationLon, stationElev: Double;
+  eqLat, eqLon, eqDep, eqMag: Double;
+  surfaceDistance, elevationDiff, hypoDistance: Double;
+begin
+  // Parse earthquake location and depth from labeled edits
+  eqLat := StrToFloat(ledEQ_Lat.Text);
+  eqLon := StrToFloat(ledEQ_Lon.Text);
+  eqDep := StrToFloat(ledEQ_Dep.Text);
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  // Initialize TargetGrid (sgPhaseData_Filter_Distance) with the same columns as SourceGrid
+  TargetGrid.ColCount := SourceGrid.ColCount;  // Ensure the column count matches
+  TargetGrid.RowCount := 1;  // Start with 1 row for headers (if needed)
+
+  // Copy the headers from SourceGrid to TargetGrid
+  for i := 0 to SourceGrid.ColCount - 1 do
+  begin
+    TargetGrid.Cells[i, 0] := SourceGrid.Cells[i, 0];
+  end;
+
+  // Iterate through SourceGrid rows (starting from 1, assuming row 0 is header)
+  for i := 1 to SourceGrid.RowCount - 1 do
+  begin
+    // Get the station value from the first column (index 0) of SourceGrid
+    stationValue := LeftStr(SourceGrid.Cells[0, i], 3);
+
+    // Search for the station value in StationGrid (sgSOEPD_stations), specifically in the first column (index 0)
+    found := False;
+    for j := 1 to StationGrid.RowCount - 1 do
+    begin
+      // Get the station_code from the first column (index 0) of StationGrid
+      searchValue := StationGrid.Cells[0, j];
+
+      if stationValue = searchValue then
+      begin
+        // Station found in StationGrid
+        found := True;
+
+        // Get station coordinates and elevation
+        stationLat := StrToFloat(StationGrid.Cells[1, j]);  // Latitude is in column 1
+        stationLon := StrToFloat(StationGrid.Cells[2, j]);  // Longitude is in column 2
+        stationElev := StrToFloat(StationGrid.Cells[3, j]); // Elevation is in column 3
+
+        // Calculate the surface distance using the Haversine formula
+        surfaceDistance := Haversine(eqLat, eqLon, stationLat, stationLon);
+
+        // Compute the elevation difference (in km)
+        elevationDiff := (eqDep - stationElev) / 1000.0;
+
+        // Calculate the 3D hypocentral distance using Pythagorean theorem
+        hypoDistance := Sqrt(Sqr(surfaceDistance) + Sqr(elevationDiff));
+
+        // Check if the hypocentral distance is within the cutoff distance
+        if hypoDistance <= Cutoff_Distance then
+        begin
+          // Add the station to the TargetGrid (sgPhaseData_Filter_Distance)
+          finalRow := TargetGrid.RowCount;  // Get current row count
+          TargetGrid.RowCount := finalRow + 1;  // Increment row count
+
+          // Copy the row data from SourceGrid to TargetGrid (same format)
+          for var col := 0 to SourceGrid.ColCount - 1 do
+          begin
+            TargetGrid.Cells[col, finalRow] := SourceGrid.Cells[col, i];
+          end;
+
+          // Optionally, you can add the calculated hypocentral distance in an extra column if needed
+          // (Assuming the last column can hold the distance value if needed)
+          // TargetGrid.Cells[TargetGrid.ColCount - 1, finalRow] := FloatToStr(hypoDistance);
+        end;
+
+        Break;  // Exit the search loop once found
+      end;
+    end;
+  end;
+end;
+
+procedure PhaseData_Filter_Time2(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+var
+  RowIndex, TargetRowIndex: Integer;
+  PArrivalTimeStr: string;
+  ParsedDate, ParsedTime, InputDateTime, GridDateTime: TDateTime;
+  FormatSettings: TFormatSettings;
+begin
+  // Set up custom format settings for date and time parsing
+  FormatSettings := TFormatSettings.Create;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy-mm-dd';
+  FormatSettings.TimeSeparator := ':';
+  FormatSettings.ShortTimeFormat := 'hh:mm';
+
+  // Parse the input date (yyyy-mm-dd) into TDateTime
+  if not TryStrToDate(InputDate, ParsedDate, FormatSettings) then
+    raise Exception.Create('Invalid input date format');
+
+  // Parse the input time (hh:mm) into TDateTime (only the fractional part will be used)
+  if not TryStrToTime(InputTime, ParsedTime, FormatSettings) then
+    raise Exception.Create('Invalid input time format');
+
+  // Combine the parsed date and time into a single TDateTime
+  InputDateTime := ParsedDate + Frac(ParsedTime);  // Frac extracts the time part
+
+  // Initialize TargetGrid (sgPhaseData_Filter_Time) and set the column count to match SourceGrid
+  TargetGrid.RowCount := 1; // Reset to 1 row to start adding filtered data
+  TargetGrid.ColCount := SourceGrid.ColCount;
+
+  // Copy headers from SourceGrid to TargetGrid (assuming headers are in row 0)
+  for RowIndex := 0 to SourceGrid.ColCount - 1 do
+  begin
+    TargetGrid.Cells[RowIndex, 0] := SourceGrid.Cells[RowIndex, 2];
+  end;
+
+  // Loop through each row in the SourceGrid
+  TargetRowIndex := 1; // Start target row index at 1 since row 0 is the header
+  for RowIndex := 3 to SourceGrid.RowCount - 1 do
+  begin
+    // Assuming the "P arrival" time is in column 4 of the grid
+    PArrivalTimeStr := SourceGrid.Cells[3, RowIndex];  // Extract "P arrival" time part
+
+    // Check if "P arrival" is empty
+    if Trim(PArrivalTimeStr) = '' then Break;
+
+    // Convert "P arrival" time string (HHMMSS.FF) to TDateTime
+    try
+      GridDateTime := EncodeTime(
+        StrToInt(Copy(PArrivalTimeStr, 1, 2)),  // Hours
+        StrToInt(Copy(PArrivalTimeStr, 3, 2)),  // Minutes
+        StrToInt(Copy(PArrivalTimeStr, 5, 2)),  // Seconds
+        Round(StrToFloat('0.' + Copy(PArrivalTimeStr, 8, 2)) * 1000)  // Milliseconds
+      );
+    except
+      Continue;  // Skip invalid times
+    end;
+
+    // Combine the parsed date with the P arrival time
+    GridDateTime := ParsedDate + Frac(GridDateTime);
+
+    // Check if the grid "P arrival" time is within the specified cutoff minutes after the input time
+    if (GridDateTime >= InputDateTime) and (GridDateTime <= IncMinute(InputDateTime, CutoffMinutes)) then
+    begin
+      // If the row matches the filter criteria, copy it to the TargetGrid
+      TargetGrid.RowCount := TargetRowIndex + 1;  // Increase the row count in the target grid
+      TargetGrid.Rows[TargetRowIndex] := SourceGrid.Rows[RowIndex];  // Copy the entire row
+      Inc(TargetRowIndex);  // Move to the next row in the target grid
+    end;
+  end;
+end;
+
+end.
+-------------------------------------
+unit UTILS_fileIO;
+
+interface
+
+procedure ListAtlasDataFilesInMemo(const InputDate, InputTime: string);
+
+procedure ExtractAndSavePhasePData;
+  function ExtractField(const Line: string; FieldIndex: Integer): string;
+
+implementation
+
+uses
+  System.SysUtils, Vcl.Dialogs, Winapi.ShellAPI, Winapi.Windows, EQPX_1,
+  System.Classes, System.IOUtils;
+
+procedure ListAtlasDataFilesInMemo(const InputDate, InputTime: string);
+var
+  Year, Month, Day: string;
+  FolderPath: string;
+  FilesList: TStringList;
+  i: Integer;
+begin
+  with frmMain do
+  begin
+      // Extract the year, month, and day from the InputDate
+      Year := Copy(InputDate, 1, 4);   // '2020'
+      Month := Copy(InputDate, 6, 2);  // '01'
+      Day := Copy(InputDate, 9, 2);    // '02'
+
+      // Construct the folder path using the base path from lblProgramPath
+      FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                    'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+      // Create a TStringList to hold the list of files
+      FilesList := TStringList.Create;
+      try
+        // List all files in the directory
+        FilesList.AddStrings(TDirectory.GetFiles(FolderPath, '*.*', TSearchOption.soTopDirectoryOnly));
+
+        // Clear the memo before adding new content
+        mmoATLAS_files.Clear;
+
+        // Add the list of files to the memo
+        for i := 0 to FilesList.Count - 1 do
+        begin
+          mmoATLAS_files.Lines.Add(FilesList[i]);
+        end;
+      finally
+        FilesList.Free;
+      end;
+    end
+end;
+
+//------------------------------
+procedure ExtractAndSavePhasePData;
+var
+  FirstRowDate, Year, Month, Day, FolderPath: string;
+  FilesList, FileLines: TStringList;
+  i, j, RowIndex: Integer;
+  Line, DateTimeValue: string;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming the date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Create a TStringList to hold the list of files
+    FilesList := TStringList.Create;
+    try
+      // List all files in the directory
+      FilesList.AddStrings(TDirectory.GetFiles(FolderPath, '*.*', TSearchOption.soTopDirectoryOnly));
+
+      // Initialize the TStringGrid sgAtlas_data
+      sgAtlas_data.RowCount := 1; // Start with only the header row
+      sgAtlas_data.ColCount := 3; // Columns: Data Type, Date/Time, File Name
+      sgAtlas_data.Cells[0, 0] := 'Data Type';
+      sgAtlas_data.Cells[1, 0] := 'Date/Time';
+      sgAtlas_data.Cells[2, 0] := 'File Name';
+
+      RowIndex := 1;
+
+      // Process each file
+      for i := 0 to FilesList.Count - 1 do
+      begin
+        FileLines := TStringList.Create;
+        try
+          // Load the file contents into FileLines
+          FileLines.LoadFromFile(FilesList[i]);
+
+          // Process each line in the file
+          for j := 0 to FileLines.Count - 1 do
+          begin
+            Line := Trim(FileLines[j]);
+
+            // Check for 'phase' lines with 'P' as the phase type
+            if Line.StartsWith('phase') and (ExtractField(Line, 6) = 'P') then
+            begin
+              // Extract the date/time (7th field in 'phase' lines)
+              DateTimeValue := Trim(ExtractField(Line, 7));
+
+              // Add the extracted data to sgAtlas_data
+              sgAtlas_data.RowCount := sgAtlas_data.RowCount + 1;
+              sgAtlas_data.Cells[0, RowIndex] := 'phase P';
+              sgAtlas_data.Cells[1, RowIndex] := DateTimeValue;
+              sgAtlas_data.Cells[2, RowIndex] := ExtractFileName(FilesList[i]);
+
+              Inc(RowIndex);
+            end;
+          end;
+        finally
+          FileLines.Free;
+        end;
+      end;
+
+    finally
+      FilesList.Free;
+    end;
+  end;
+end;
+
+function ExtractField(const Line: string; FieldIndex: Integer): string;
+var
+  Fields: TStringList;
+begin
+  Fields := TStringList.Create;
+  try
+    Fields.CommaText := Line;
+    if (FieldIndex > 0) and (FieldIndex <= Fields.Count) then
+      Result := Fields[FieldIndex - 1]
+    else
+      Result := '';
+  finally
+    Fields.Free;
+  end;
+end;
+
+end.
+-----------------------------
+unit UTILS_settings;
+
+interface
+
+uses
+  ComCtrls;  // Include ComCtrls to access TListView
+
+// Declare the SetupListView procedure
+procedure SetupListView(ListView: TListView);
+
+implementation
+
+procedure SetupListView(ListView: TListView);
+begin
+  ListView.Columns.Clear;  // Clear any existing columns
+
+  // Add a small-width or invisible column for the checkboxes
+  with ListView.Columns.Add do
+  begin
+    Caption := ''; // Leave the caption blank for the checkbox column
+    Width := 20;   // Small width, or set to 0 to completely hide it
+  end;
+
+  // Add the columns for Date, Time, Magnitude, Latitude, Longitude, Depth
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Date';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Time';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Magnitude';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Latitude';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Longitude';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Depth';
+    Width := 100;
+  end;
+
+  with ListView.Columns.Add do
+  begin
+    Caption := 'Intensity';  // New column for Intensity
+    Width := 100;
+  end;
+
+end;
+
+end.
+---------------------------
+unit UTILS_stations;
+
+interface
+
+uses
+  FireDAC.Comp.Client, Vcl.Grids;
+
+procedure LoadStationsToGrid(sgSOEPD_stations: TStringGrid; const DBPath: string);
+
+implementation
+
+procedure LoadStationsToGrid(sgSOEPD_stations: TStringGrid; const DBPath: string);
+var
+  FDConnection: TFDConnection;
+  FDQuery: TFDQuery;
+  i, j: Integer;
+begin
+  // Initialize connection to SQLite DB
+  FDConnection := TFDConnection.Create(nil);
+  try
+    FDConnection.DriverName := 'SQLite';
+    FDConnection.Params.Database := DBPath; // Set the database path dynamically
+    FDConnection.LoginPrompt := False;
+    FDConnection.Connected := True;
+
+    // Create query to select all data from stations
+    FDQuery := TFDQuery.Create(nil);
+    try
+      FDQuery.Connection := FDConnection;
+
+      // Set RowsetSize to fetch all rows at once
+      FDQuery.FetchOptions.RowsetSize := -1;  // Fetch all rows
+
+      // SQL query to fetch all stations
+      FDQuery.SQL.Text := 'SELECT * FROM stations';
+      FDQuery.Open;
+
+      // Set up StringGrid column headers
+      sgSOEPD_stations.RowCount := 1; // Initially, only header row
+      sgSOEPD_stations.ColCount := FDQuery.FieldCount;
+
+      // Set up column headers in the first row (row 0)
+      for i := 0 to FDQuery.FieldCount - 1 do
+      begin
+        sgSOEPD_stations.Cells[i, 0] := FDQuery.Fields[i].FieldName; // Header
+      end;
+
+      // Populate StringGrid with data
+      i := 1; // Start at row 1 since row 0 is header
+      while not FDQuery.Eof do
+      begin
+        sgSOEPD_stations.RowCount := sgSOEPD_stations.RowCount + 1;  // Add a new row for each record
+        for j := 0 to FDQuery.FieldCount - 1 do
+        begin
+          sgSOEPD_stations.Cells[j, i] := FDQuery.Fields[j].AsString;
+        end;
+        Inc(i);
+        FDQuery.Next;
+      end;
+
+    finally
+      FDQuery.Free;
+    end;
+
+  finally
+    FDConnection.Free;
+  end;
+end;
+
+end.
+

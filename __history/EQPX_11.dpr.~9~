@@ -1,0 +1,23 @@
+program EQPX_11;
+
+uses
+  Vcl.Forms,
+  EQPX_1 in 'EQPX_1.pas' {frmMain},
+  UTILS_DB in 'UTILS_DB.pas',
+  DM1 in 'DM1.pas' {DataModule1: TDataModule},
+  UTILS_fileIO in 'UTILS_fileIO.pas',
+  UTILS_settings in 'UTILS_settings.pas',
+  UTILS_DateTime in 'UTILS_DateTime.pas',
+  UTILS_ATLAS in 'UTILS_ATLAS.pas',
+  UTILS_stations in 'UTILS_stations.pas',
+  UTILS_Math in 'UTILS_Math.pas';
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TfrmMain, frmMain);
+  Application.CreateForm(TDataModule1, DataModule1);
+  Application.Run;
+end.

@@ -1,0 +1,224 @@
+unit UTILS_DateTime;
+
+interface
+
+uses
+  StrUtils, Dialogs , SysUtils , Vcl.Mask, Vcl.ExtCtrls, ComCtrls, StdCtrls; // Include necessary units for TListView and TLabeledEdit
+
+function ExtractDateTime_heading(sDateTime : string) : string;
+
+function ExtractDateTime(sDateTime: string): TDateTime;
+procedure UpdateDateTimePickerFromGrid;
+
+procedure SetDateTimePickerFromLabeledEdits(ledEQ_datex, ledEQ_timex: TLabeledEdit; dtpEQDateTime: TDateTimePicker);
+
+function ConvertTimeWithDate(const TimeStr: string; ledEQ_datex: TLabeledEdit): string;
+
+procedure ConvertDateTime_format(DateTime_format1 : string);
+// Declare the ExtractCheckedDateTime procedure
+
+procedure ExtractCheckedDateTime(ListView: TListView;
+  ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep: TLabeledEdit);
+
+implementation
+
+uses EQPX_1;
+
+
+function ExtractDateTime_heading(sDateTime : string) : string;
+var
+  wX, wYr, wMon, wDay, wHr, wMin, wSec, wMSec : Word;
+  s, x : string;
+  OldShortDateFormat: string;
+  OldDateSeparator: Char;
+  dt: TDateTime;
+  fs: TFormatSettings;
+  i : integer;
+begin
+  fs := TFormatSettings.Create;
+  fs.DateSeparator := '-';
+
+  fs.ShortDateFormat := 'yyyy-MM-dd';
+  fs.LongTimeFormat := 'hh:mm:ss.zzzz';
+
+  dt := StrToDateTime(sDateTime, fs);
+  DecodeDate(dt, wYr, wMon, wDay);
+  DecodeTime(dt, wHr, wMin, wSec, wMSec);
+
+//  if wMin < 10 then begin
+//    wHr := wHr - 1;
+//    wMin := wMin + 60;
+//  end;
+
+//    Result := Format('%.*d%.*d%.*d%.*d%.*d %.1f', [2, wMon, 2, wDay, 2, wYr mod 100, 2, wHr, 2, wMin, StrToFloat(frmMain.sgAtlasPick.Cells[7, 2])]);
+
+    s := FormatFloat('00', wMon); // month
+    s := s + FormatFloat('00', wDay); // day
+    s := s + FormatFloat('00', StrToInt(RightStr(IntToStr(wYr), 2))); // year
+
+    s := s + FormatFloat('00', wHr); // hour
+    s := s + FormatFloat('00', wMin); // minute
+    x := RightStr(sDateTime, 5);
+//    s := s +' '+ FormatFloat('00.0', StrToFloat(frmMain.sgAtlasPick.Cells[7,2])); // second
+    s := s +' '+ FormatFloat('00.0', StrToFloat(x)); // second
+    Result := s;
+end;
+
+function ExtractDateTime(sDateTime: string): TDateTime;
+var
+  fs: TFormatSettings;
+begin
+  fs := TFormatSettings.Create;
+  fs.DateSeparator := '-';
+  fs.TimeSeparator := ':';
+  fs.ShortDateFormat := 'yyyy-MM-dd';
+  fs.LongTimeFormat := 'hh:mm:ss.zzzz';  // Supports fractional seconds
+
+  // Convert the string to a TDateTime using the specified format settings
+  try
+    Result := StrToDateTime(sDateTime, fs);
+  except
+    on E: Exception do
+    begin
+      raise Exception.Create('Error parsing DateTime: ' + E.Message);
+    end;
+  end;
+end;
+
+procedure UpdateDateTimePickerFromGrid;
+var
+  DateTimeValue: TDateTime;
+begin
+  try
+    // Extract the TDateTime from the grid cell (sgAtlasData_Final.Cells[4,1])
+    DateTimeValue := ExtractDateTime(frmMain.sgAtlasData_Final.Cells[4, 1]);
+
+    // Update the DateTimePicker with the extracted value
+    frmMain.dtpEQDateTime.DateTime := DateTimeValue;
+
+//    ShowMessage('DateTimePicker updated to: ' + DateTimeToStr(DateTimeValue));
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Failed to update DateTimePicker: ' + E.Message);
+    end;
+  end;
+end;
+
+procedure SetDateTimePickerFromLabeledEdits(ledEQ_datex, ledEQ_timex: TLabeledEdit; dtpEQDateTime: TDateTimePicker);
+var
+  CombinedDateTime: TDateTime;
+  DateStr, TimeStr: string;
+  DateValue, TimeValue: TDateTime;
+  FormatSettings: TFormatSettings;
+begin
+  // Set up custom format settings
+  FormatSettings := TFormatSettings.Create;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy-mm-dd';
+  FormatSettings.TimeSeparator := ':';
+  FormatSettings.ShortTimeFormat := 'hh:nn';
+
+  // Get values from labeled edits
+  DateStr := Trim(ledEQ_datex.Text);  // Example: '2024-10-15'
+  TimeStr := Trim(ledEQ_timex.Text);  // Example: '14:30'
+
+  try
+    // Convert date and time strings to TDateTime
+    DateValue := StrToDate(DateStr, FormatSettings);
+    TimeValue := StrToTime(TimeStr, FormatSettings);
+
+    // Combine the date and time
+    CombinedDateTime := DateValue + Frac(TimeValue);
+
+    // Set the value of the DateTimePicker
+    dtpEQDateTime.DateTime := CombinedDateTime;
+  except
+    on E: Exception do
+      ShowMessage('Error setting DateTimePicker: ' + E.Message);
+  end;
+end;
+
+function ConvertTimeWithDate(const TimeStr: string; ledEQ_datex: TLabeledEdit): string;
+var
+  Hour, Minute, Second, MSec: string;
+  DatePart, DateTimeResult: TDateTime;
+  FormatSettings: TFormatSettings;
+  S : string;
+  f,g : Single;
+begin
+  if Length(TimeStr) < 8 then
+    raise Exception.Create('Invalid time format. Expected hhmmss.ss');
+
+  // Extract hour, minute, second, and millisecond parts
+  Hour := Copy(TimeStr, 1, 2);
+  Minute := Copy(TimeStr, 3, 2);
+  Second := Copy(TimeStr, 5, 2);
+  MSec := Copy(TimeStr, 8, Length(TimeStr) - 7);
+
+  Result := ledEQ_datex.Text +' '+ Hour +':'+ Minute +':'+ Second +'.'+ MSec;
+end;
+
+procedure ConvertDateTime_format(DateTime_format1 : string);
+var
+  OriginalDateTime: TDateTime;
+  OriginalValue: Double;
+  FormattedDateTime: string;
+  FormattedValue: string;
+begin
+  // Example values
+  OriginalDateTime := StrToDateTime(DateTime_format1);
+  OriginalValue := 532.28; // Example value with leading zeros
+
+  // Format the DateTime as 'yyyy-mm-dd hh:nn:ss'
+  FormattedDateTime := FormatDateTime('yyyy-mm-dd hh:nn:ss', OriginalDateTime);
+
+  // Format the floating number without leading zeros
+  FormattedValue := FormatFloat('0.00', OriginalValue);
+
+  // Output the results
+  ShowMessage('Formatted DateTime: ' + FormattedDateTime);
+  ShowMessage('Formatted Value: ' + FormattedValue);
+end;
+
+procedure ExtractCheckedDateTime(ListView: TListView;
+  ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep: TLabeledEdit);
+var
+  i: Integer;
+  DateValue, TimeValue, MagValue, LatValue, LonValue, DepValue: string;
+begin
+  // Iterate over all items in the ListView
+//  for i := 0 to ListView.Items.Count - 1 do
+  for i := 7 to ListView.Items.Count - 1 do
+  begin
+    // Check if the item is checked (selected)
+    if ListView.Items[i].Checked then
+    begin
+      // Extract Date and Time from SubItems
+      DateValue := ListView.Items[i].SubItems[0];  // Date is in the first SubItem
+      TimeValue := ListView.Items[i].SubItems[1];  // Time is in the second SubItem
+
+      // Extract Latitude, Longitude, and Depth from SubItems
+      MagValue := ListView.Items[i].SubItems[2];   // Magnitude in the sixth SubItem
+      LatValue := ListView.Items[i].SubItems[3];  // Latitude in the third SubItem
+      LonValue := ListView.Items[i].SubItems[4];  // Longitude in the fourth SubItem
+      DepValue := ListView.Items[i].SubItems[5];  // Depth in the fifth SubItem
+
+      // Set the extracted Date and Time to the labeled edits
+      ledEQ_datex.Text := DateValue;  // Set the date in ledEQ_datex
+      ledEQ_timex.Text := Copy(TimeValue, 1, 5);  // Set the time (HH:MM format) in ledEQ_timex
+
+      // Set the extracted Latitude, Longitude, and Depth to the respective labeled edits
+      ledEQ_Mag.Text := MagValue;  // Set the magnitude in ledEQ_Mag
+      ledEQ_Lat.Text := LatValue;  // Set the latitude in ledEQ_Lat
+      ledEQ_Lon.Text := LonValue;  // Set the longitude in ledEQ_Lon
+      ledEQ_Dep.Text := DepValue;  // Set the depth in ledEQ_Dep
+
+      // Stop after the first checked item, if you only need one
+      Break;
+    end;
+  end;
+end;
+
+end.
+

@@ -1,0 +1,22 @@
+this is the format of input data of plotter:
+1st col = station
+2nd col = p arrival time (mmss.ss)
+3rd col = s arrival time (mmss.ss)
+4th col = duration (seconds)
+
+first line = mmddyyhhmm ss.s lat   lon    dep 
+
+1213190138 17.2 13.63 124.66 006.9
+PVC    3828.08   3836.65   71
+CNP    3836.74   3852.88   104
+SCS    3838.95   3856.06   111
+JCN    3853.07   3918.45   101
+AIQ    3901.66             127
+RCP    3902.98   3939.46   116
+SFC    3905.89   3944.65   116
+VKC    3907.48          
+LQP    3907.65          
+GNQ    3908.77   3947.30   139
+TIR    3911.72   3952.70   139
+LBL    3911.89   3950.81   140
+XXX

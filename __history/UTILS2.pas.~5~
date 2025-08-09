@@ -1,0 +1,115 @@
+unit UTILS2;
+
+interface
+
+uses SysUtils, System.StrUtils;
+
+function Remaining_PS: Boolean;
+
+function CheckValuesAndAddAsterisk_S(RMS_limit: Double): Boolean;
+function CheckValuesAndAddAsterisk_P(RMS_limit: Double): Boolean;
+
+function Highest_PS(P_S: Char) : Integer;
+
+implementation
+
+uses EQPX_1;
+
+function Remaining_PS: Boolean;
+begin
+  Result := (StrToInt(frmMain.edtUsed_P.Text) >= 3) and (StrToInt(frmMain.edtUsed_S.Text) >= 1);
+end;
+
+function CheckValuesAndAddAsterisk_S(RMS_limit: Double): Boolean;
+var
+  i: Integer;
+  value: Double;
+  found: Boolean;
+begin
+  found := False;
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    if frmMain.sgMainData.Cells[0, i] = '' then break;
+    value := Abs(StrToFloatDef(frmMain.sgMainData.Cells[5, i], -1)); // Read value
+
+    if (value >= RMS_limit) and (Trim(frmMain.sgMainData.Cells[6, i]) = '') then begin
+      frmMain.sgMainData.Cells[6, i] := '*'; // Add *
+      found := True;
+    end
+    else
+//      frmMain.sgMainData.Cells[6, i] := ''; // Clear column 6 if value is less than RMS_limit
+  end;
+  Result := found;
+end;
+
+function CheckValuesAndAddAsterisk_P(RMS_limit: Double): Boolean;
+var
+  i: Integer;
+  value: Double;
+  found: Boolean;
+begin
+  found := False;
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    if frmMain.sgMainData.Cells[0, i] = '' then break;
+    value := Abs(StrToFloatDef(frmMain.sgMainData.Cells[2, i], -1)); // Read value from
+
+    if (value >= RMS_limit) and (Trim(frmMain.sgMainData.Cells[3, i]) = '') then begin
+      frmMain.sgMainData.Cells[3, i] := '*'; // Add * to
+      found := True;
+    end
+    else
+//      frmMain.sgMainData.Cells[6, i] := ''; // Clear column 6 if value is less than RMS_limit
+  end;
+  Result := found;
+end;
+//-----------------
+function Highest_PS(P_S: Char) : Integer;
+var
+  i, highestValueRow: Integer;
+  highestValue, currentValue: Double;
+  columnValue, columnMarker: Integer;
+  ctr: Integer;
+begin
+  Result := -1; // Default return value indicating no row found.
+  // Assign column numbers based on the data type.
+  if P_S = 'P' then
+  begin
+    columnValue := 2;
+    columnMarker := 3;
+  end
+  else // Assume 'S'
+  begin
+    columnValue := 5;
+    columnMarker := 6;
+  end;
+  // Exit if there is no data to process.
+  if frmMain.sgMainData.RowCount < 2 then
+    Exit;
+  // Initialize the highest value as 0 and the highest value row as 1.
+  highestValue := 0.0;
+  highestValueRow := 1;
+  // Get the row count and iterate through the rows of the grid.
+  ctr := frmMain.sgMainData.RowCount;
+  for i := 1 to ctr - 1 do
+  begin
+    // Continue to the next iteration if the current cell in the marker column has an asterisk.
+    if (frmMain.sgMainData.Cells[columnMarker, i]  = '*') then continue;
+    // Get the absolute value of the current cell in the value column, using the highest value as a default.
+    currentValue := Abs(StrToFloatDef(frmMain.sgMainData.Cells[columnValue, i], highestValue ));
+    // Check if the current value is greater than the highest value found so far.
+    if currentValue > highestValue then
+    begin
+      // If so, update the highest value and the highest value row.
+      highestValue := currentValue;
+      highestValueRow := i;
+    end;
+  end;
+  // Return the row number of the highest value only if the highest value is greater than or equal to 1.
+  if highestValue >= 1 then
+    Result := highestValueRow
+  else
+    Result := -1; // Return -1 if the highest value is less than 1.
+end;
+
+end.

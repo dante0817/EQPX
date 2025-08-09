@@ -1,0 +1,91 @@
+unit UTILS_Math;
+
+interface
+
+uses
+  SysUtils, System.StrUtils, DateUtils, Math;
+
+procedure Magnitude_duration;
+
+function ComputeCoda(sDateTime_P, sDateTime_C: string): string;
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+
+implementation
+
+uses EQPX_1;
+
+procedure Magnitude_duration;
+var
+  i: integer;
+  Mag, MB, MS, sDelta, sDuration: Single;
+begin
+  // Iterate through the rows of sgMainData
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    // Skip the row if the "P" column contains an asterisk (*)
+    if (Pos('*', frmMain.sgMainData.Cells[3, i]) > 0) or (frmMain.sgMainData.Cells[7, i] = '') then
+      Continue;
+    // Retrieve the sDelta and sDuration values from the corresponding columns
+    sDelta := StrToFloat(frmMain.sgMainData.Cells[8, i]);
+    sDuration := StrToFloat(frmMain.sgMainData.Cells[7, i]);
+    // Calculate the magnitudes depending on the value of sDelta
+    if sDelta > 4.5 then
+      Mag := -3.68 + 3.24 * Log10(sDuration) + 9.07 * 0.0001 * sDelta * 111.1
+    else
+      Mag := -3.49 + 3.24 * Log10(sDuration);
+    // Calculate MB and MS magnitudes
+    MB := (sqr(Mag) * 0.01) + (Mag * 0.8) + 1.7;
+    MS := (MB - 2.5) / 0.63;
+    // Save the calculated values to column 9
+    frmMain.sgMainData.Cells[9, i] := FormatFloat('0.00', Mag);
+  end;
+end;
+
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+const
+  R = 6371; // Earth's radius in kilometers
+var
+  dLat, dLon, a, c: Double;
+begin
+  dLat := DegToRad(lat2 - lat1);
+  dLon := DegToRad(lon2 - lon1);
+
+  a := Sin(dLat / 2) * Sin(dLat / 2) + Cos(DegToRad(lat1)) * Cos(DegToRad(lat2)) * Sin(dLon / 2) * Sin(dLon / 2);
+  c := 2 * ArcTan2(Sqrt(a), Sqrt(1 - a));
+
+  Result := R * c; // Distance in kilometers
+end;
+
+function ComputeCoda(sDateTime_P, sDateTime_C: string): string;
+var
+  yrP, monP, dayP: integer;
+  yrC, monC, dayC: integer;
+  dtDateTime_P, dtDate_P, dtTime_P: TDateTime;
+  dtDateTime_C, dtDate_C, dtTime_C: TDateTime;
+  s: string;
+begin
+  // Extract time and date from P phase
+  s := Trim(Copy(sDateTime_P, 12, 8)); // Time part for P phase
+  dtTime_P := StrToTime(s);
+
+  yrP := StrToInt(LeftStr(sDateTime_P, 4));  // Year
+  monP := StrToInt(Copy(sDateTime_P, 6, 2)); // Month
+  dayP := StrToInt(Copy(sDateTime_P, 9, 2)); // Day
+  dtDate_P := EncodeDate(yrP, monP, dayP);   // Date
+  dtDateTime_P := dtDate_P + dtTime_P;       // Full DateTime for P phase
+
+  // Extract time and date from Coda time
+  s := Trim(Copy(sDateTime_C, 12, 8)); // Time part for Coda
+  dtTime_C := StrToTime(s);
+
+  yrC := StrToInt(LeftStr(sDateTime_C, 4));  // Year
+  monC := StrToInt(Copy(sDateTime_C, 6, 2)); // Month
+  dayC := StrToInt(Copy(sDateTime_C, 9, 2)); // Day
+  dtDate_C := EncodeDate(yrC, monC, dayC);   // Date
+  dtDateTime_C := dtDate_C + dtTime_C;       // Full DateTime for Coda
+
+  // Calculate the seconds difference between P phase and Coda time
+  Result := FloatToStr(SecondsBetween(dtDateTime_C, dtDateTime_P));
+end;
+
+end.

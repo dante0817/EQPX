@@ -1,0 +1,123 @@
+unit UTILS_CombineData;
+
+interface
+
+uses
+  Vcl.Grids, SysUtils, StrUtils, Vcl.StdCtrls;
+
+procedure Combine_Grids(SourceGrid1, SourceGrid2, TargetGrid: TStringGrid);
+procedure CheckAndListFoundStations(SourceGrid, TargetGrid: TStringGrid; Memo: TMemo);
+procedure CopyAtlasDataToCombineGrid(AtlasGrid, CombineGrid: TStringGrid);
+
+implementation
+
+uses EQPX_1;
+
+procedure Combine_Grids(SourceGrid1, SourceGrid2, TargetGrid: TStringGrid);
+var
+  i, j, finalRow: Integer;
+  stationValue1, stationValue2: string;
+  found: Boolean;
+begin
+  // Initialize TargetGrid (sgCombineData) with the same columns as SourceGrid1 (sgPhaseData_Filter_Distance)
+  TargetGrid.ColCount := SourceGrid1.ColCount;  // Set the column count to match SourceGrid1
+  TargetGrid.RowCount := 1;  // Start with 1 row for headers (if needed)
+
+  // Copy the headers from SourceGrid1 to TargetGrid (sgCombineData)
+  for i := 0 to SourceGrid1.ColCount - 1 do
+  begin
+    TargetGrid.Cells[i, 0] := SourceGrid1.Cells[i, 0];
+  end;
+
+  // Iterate through rows of SourceGrid1 (sgPhaseData_Filter_Distance)
+  for i := 1 to SourceGrid1.RowCount - 1 do
+  begin
+    // Get the first 3 letters of the station from SourceGrid1
+    stationValue1 := LeftStr(SourceGrid1.Cells[0, i], 3);
+
+    // Search for the station in SourceGrid2 (sgAtlasData_Final), compare only the first 3 letters
+    found := False;
+    for j := 1 to SourceGrid2.RowCount - 1 do
+    begin
+      // Get the first 3 letters of the station from SourceGrid2
+      stationValue2 := LeftStr(SourceGrid2.Cells[1, j], 3);  // Assuming 'Station' is in column 1 of sgAtlasData_Final
+
+      if stationValue1 = stationValue2 then
+      begin
+        found := True;
+        Break;  // Exit the loop once found
+      end;
+    end;
+
+    // If the station is not found in SourceGrid2, add it to TargetGrid (sgCombineData)
+    if not found then
+    begin
+      finalRow := TargetGrid.RowCount;  // Get the current row count of TargetGrid
+      TargetGrid.RowCount := finalRow + 1;  // Increment row count
+
+      // Copy the row data from SourceGrid1 to TargetGrid (sgCombineData)
+      for var col := 0 to SourceGrid1.ColCount - 1 do
+      begin
+        TargetGrid.Cells[col, finalRow] := SourceGrid1.Cells[col, i];
+      end;
+    end;
+  end;
+end;
+
+procedure CheckAndListFoundStations(SourceGrid, TargetGrid: TStringGrid; Memo: TMemo);
+var
+  i, j: Integer;
+  stationSource, stationTarget: string;
+  found: Boolean;
+begin
+  // Clear the memo before listing stations
+  Memo.Clear;
+
+  // Iterate over the rows of SourceGrid (starting from row 1, assuming row 0 is header)
+  for i := 1 to SourceGrid.RowCount - 1 do
+  begin
+    stationSource := SourceGrid.Cells[0, i];  // Get the station from the first column of SourceGrid
+
+    // Assume the station is not found initially
+    found := False;
+
+    // Iterate over the rows of TargetGrid to check if the station exists
+    for j := 1 to TargetGrid.RowCount - 1 do
+    begin
+      stationTarget := TargetGrid.Cells[1, j];  // Station is in the second column (index 1) of TargetGrid
+
+      if stationSource = stationTarget then
+      begin
+        found := True;  // Station found in TargetGrid
+        Break;          // Exit the inner loop as we found the station
+      end;
+    end;
+
+    // If station is found in TargetGrid, list it in Memo
+    if found then
+    begin
+      Memo.Lines.Add('Station found: ' + stationSource);  // Add the station to the Memo
+    end;
+  end;
+end;
+
+procedure CopyAtlasDataToCombineGrid(AtlasGrid, CombineGrid: TStringGrid);
+var
+  i, j: Integer;
+begin
+  // Step 1: Set the column and row count for CombineGrid based on AtlasGrid
+  CombineGrid.ColCount := AtlasGrid.ColCount;  // Ensure CombineGrid has the same number of columns as AtlasGrid
+  CombineGrid.RowCount := AtlasGrid.RowCount;  // Ensure CombineGrid has the same number of rows as AtlasGrid
+
+  // Step 2: Copy the headers and data from AtlasGrid to CombineGrid
+  for i := 0 to AtlasGrid.RowCount - 1 do
+  begin
+    for j := 0 to AtlasGrid.ColCount - 1 do
+    begin
+      CombineGrid.Cells[j, i] := AtlasGrid.Cells[j, i];  // Copy each cell's data
+    end;
+  end;
+end;
+
+end.
+

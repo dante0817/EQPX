@@ -1,0 +1,149 @@
+﻿unit UTILS_Brute_Force;
+
+interface
+
+uses
+  Math, System.SysUtils, System.Classes, EQPX_1;
+
+/// Phase pick info: which row, which column to mark, and P vs S
+  type
+    TPhaseInfo = record
+      Row: Integer;
+      MarkerCol: Integer;  // 3 for P, 6 for S in sgMainData
+      IsP: Boolean;
+    end;
+
+var
+  PhaseList: array of TPhaseInfo;
+
+// Build list of all available P/S picks from sgMainData
+procedure BuildPhaseList;
+// Checks if a mask selects at least minimum Ps and Ss
+function MaskIsValid(mask: Cardinal): Boolean;
+// Applies mask: bit=1→keep pick, bit=0→mark '*' in grid
+procedure ApplyMask(mask: Cardinal);
+// Run brute‐force over all valid masks, pick lowest RMS, reapply & display
+procedure BruteForceSearch;
+
+implementation
+
+uses
+  Vcl.Dialogs, System.StrUtils;
+
+procedure BuildPhaseList;
+var
+  r, idx: Integer;
+  pi: TPhaseInfo;
+begin
+  PhaseList := nil;
+  with frmMain.sgMainData do
+    for r := 1 to RowCount - 1 do
+    begin
+      if Trim(Cells[0, r]) = '' then
+        Break;
+      if Trim(Cells[1, r]) <> '' then
+      begin
+        pi.Row := r; pi.MarkerCol := 3; pi.IsP := True;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+      if Trim(Cells[4, r]) <> '' then
+      begin
+        pi.Row := r; pi.MarkerCol := 6; pi.IsP := False;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+    end;
+end;
+
+function MaskIsValid(mask: Cardinal): Boolean;
+var
+  i, cntP, cntS: Integer;
+begin
+  cntP := 0; cntS := 0;
+  for i := 0 to High(PhaseList) do
+    if (mask and (1 shl i)) <> 0 then
+      if PhaseList[i].IsP then Inc(cntP) else Inc(cntS);
+  Result := (cntP >= StrToIntDef(frmMain.ledMInimum_P.Text, 3))
+         and (cntS >= StrToIntDef(frmMain.ledMInimum_S.Text, 1));
+end;
+
+procedure ApplyMask(mask: Cardinal);
+var
+  i: Integer;
+begin
+  with frmMain.sgMainData do
+    for i := 1 to RowCount - 1 do
+    begin
+      Cells[3, i] := '';
+      Cells[6, i] := '';
+    end;
+  for i := 0 to High(PhaseList) do
+    if (mask and (1 shl i)) = 0 then
+      frmMain.sgMainData.Cells[PhaseList[i].MarkerCol, PhaseList[i].Row] := '*';
+end;
+
+procedure BruteForceSearch;
+var
+  mask, maxMask, bestMask: Cardinal;
+  bestRMS, currRMS: Double;
+  i: Integer;
+  picks: TStringList;
+begin
+  BuildPhaseList;
+  if Length(PhaseList) = 0 then
+  begin
+    ShowMessage('No picks available for brute‑force.');
+    Exit;
+  end;
+
+  bestRMS := MaxDouble;
+  bestMask := 0;
+  maxMask := (1 shl Length(PhaseList)) - 1;
+
+  for mask := 1 to maxMask do
+    if MaskIsValid(mask) then
+    begin
+      ApplyMask(mask);
+      frmMain.PLOT_DATClick(nil);
+      frmMain.PHILSTA_DATClick(nil);
+      frmMain.PLOT_eqClick(nil);
+      frmMain.ExtractResult_headingClick(nil);
+      frmMain.Update_res_PSClick(nil);
+      frmMain.Used_P_SClick(nil);
+      currRMS := StrToFloatDef(frmMain.ledRMS.Text, MaxDouble);
+      if currRMS < bestRMS then
+      begin
+        bestRMS := currRMS;
+        bestMask := mask;
+      end;
+    end;
+
+  ApplyMask(bestMask);
+  frmMain.PLOT_DATClick(nil);
+  frmMain.PHILSTA_DATClick(nil);
+  frmMain.PLOT_eqClick(nil);
+  frmMain.ExtractResult_headingClick(nil);
+  frmMain.Update_res_PSClick(nil);
+  frmMain.Used_P_SClick(nil);
+
+  picks := TStringList.Create;
+  try
+    for i := 0 to High(PhaseList) do
+      if (bestMask and (1 shl i)) <> 0 then
+        picks.Add(Format('%s %s', [
+          frmMain.sgMainData.Cells[0, PhaseList[i].Row],
+          IfThen(PhaseList[i].IsP, 'P', 'S')
+        ]));
+
+    ShowMessage(Format('Best RMS = %.3f'#13#10+'Combination:'#13#10+'%s',
+      [bestRMS, picks.Text]));
+  finally
+    picks.Free;
+  end;
+end;
+
+end.
+

@@ -1,0 +1,90 @@
+unit UTILS_fileIO;
+
+interface
+
+procedure OpenAtlasDataFolder;
+procedure ListAtlasDataFilesInMemo;
+
+implementation
+
+uses
+  System.SysUtils, Vcl.Dialogs, Winapi.ShellAPI, Winapi.Windows, EQPX_1,
+  System.Classes, System.IOUtils;
+
+procedure OpenAtlasDataFolder;
+var
+  FirstRowDate: string;
+  Year, Month, Day: string;
+  FolderPath: string;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Check if the folder exists
+    if DirectoryExists(FolderPath) then
+    begin
+      // Open the folder in Windows Explorer
+      ShellExecute(0, 'open', PChar(FolderPath), nil, nil, SW_SHOWNORMAL);
+    end
+    else
+    begin
+      ShowMessage('Folder does not exist: ' + FolderPath);
+    end;
+  end;
+end;
+
+
+procedure ListAtlasDataFilesInMemo;
+var
+  FirstRowDate: string;
+  Year, Month, Day: string;
+  FolderPath: string;
+  FilesList: TStringList;
+  i: Integer;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming the date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Create a TStringList to hold the list of files
+    FilesList := TStringList.Create;
+    try
+      // List all files in the directory
+      FilesList.AddStrings(TDirectory.GetFiles(FolderPath, '*.*', TSearchOption.soTopDirectoryOnly));
+
+      // Clear the memo before adding new content
+      mmoTemp.Clear;
+
+      // Add the list of files to the memo
+      for i := 0 to FilesList.Count - 1 do
+      begin
+        mmoTemp.Lines.Add(FilesList[i]);
+      end;
+    finally
+      FilesList.Free;
+    end;
+  end;
+end;
+
+end.

@@ -1,0 +1,275 @@
+﻿unit UTILS_Brute_Force;
+
+interface
+
+uses
+  System.Threading,
+  System.SyncObjs,
+  Math, Dialogs, System.SysUtils, System.Classes, EQPX_1, System.Diagnostics;
+
+type
+  TPhaseInfo = record
+    Row: Integer;
+    MarkerCol: Integer;  // 3 for P, 6 for S in sgMainData
+    IsP: Boolean;
+  end;
+
+  TComboInfo = record
+    Mask      : Cardinal;
+    RMS       : Double;
+    UsedP     : Integer;
+    UsedS     : Integer;
+    Residuals : TArray<Double>;  // absolute residuals for each included pick
+  end;
+
+var
+  PhaseList: array of TPhaseInfo;
+
+procedure BuildPhaseList;
+function MaskIsValid(mask: Cardinal): Boolean;
+procedure ApplyMask(mask: Cardinal);
+procedure BruteForceSearch;
+
+implementation
+
+{-------------------------------------------------------------------------------
+  BuildPhaseList:
+  - Include a P‐pick if col1 is nonblank and no '*' in col3.
+  - Include an S‐pick only if col4 is nonblank, P was present, and no '*' in col6.
+-------------------------------------------------------------------------------}
+procedure BuildPhaseList;
+var
+  r, idx: Integer;
+  pi: TPhaseInfo;
+begin
+  PhaseList := nil;
+  with frmMain.sgMainData do
+    for r := 1 to RowCount - 1 do
+    begin
+      if Trim(Cells[0, r]) = '' then
+        Break;
+
+      // P-pick
+      if Cells[3, r] <> '*' then
+      begin
+        pi.Row       := r;
+        pi.MarkerCol := 3;
+        pi.IsP       := True;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+
+      // S-pick (only if P exists and no '*' in col6)
+      if (Trim(Cells[4, r]) <> '') and (Cells[6, r] <> '*') then
+      begin
+        pi.Row       := r;
+        pi.MarkerCol := 6;
+        pi.IsP       := False;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+    end;
+end;
+
+{-------------------------------------------------------------------------------
+  MaskIsValid:
+  - Must have ≥ Minimum_P P-picks and ≥ Minimum_S S-picks.
+  - Any S-bit can only be set if its P-bit (same Row) is also set.
+-------------------------------------------------------------------------------}
+function MaskIsValid(mask: Cardinal): Boolean;
+var
+  i, cntP, cntS, j: Integer;
+begin
+  cntP := 0; cntS := 0;
+
+  // count P and S bits
+  for i := 0 to High(PhaseList) do
+    if (mask and (1 shl i)) <> 0 then
+      if PhaseList[i].IsP then
+        Inc(cntP)
+      else
+        Inc(cntS);
+
+  // enforce S-only rule
+  for i := 0 to High(PhaseList) do
+    if not PhaseList[i].IsP and ((mask and (1 shl i)) <> 0) then
+      for j := 0 to High(PhaseList) do
+        if PhaseList[j].IsP
+        and (PhaseList[j].Row = PhaseList[i].Row)
+        and ((mask and (1 shl j)) = 0) then
+          Exit(False);
+
+  // enforce minimum counts
+  Result :=
+    (cntP >= StrToIntDef(frmMain.ledMinimum_P.Text, 3)) and
+    (cntS >= StrToIntDef(frmMain.ledMinimum_S.Text, 1));
+end;
+
+{-------------------------------------------------------------------------------
+  ApplyMask:
+  - Clears old asterisks, then marks any bit=0 pick with '*'.
+-------------------------------------------------------------------------------}
+procedure ApplyMask(mask: Cardinal);
+var
+  i: Integer;
+begin
+  with frmMain.sgMainData do
+  begin
+    for i := 1 to RowCount - 1 do
+    begin
+      Cells[3, i] := '';  // clear P-marker
+      Cells[6, i] := '';  // clear S-marker
+    end;
+
+    for i := 0 to High(PhaseList) do
+      if (mask and (1 shl i)) = 0 then
+        Cells[PhaseList[i].MarkerCol, PhaseList[i].Row] := '*';
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+  ResidualsAreValid:
+  - Check that each included residual is |value| < 1, and collect them.
+-------------------------------------------------------------------------------}
+function ResidualsAreValid(mask: Cardinal; out ResOut: TArray<Double>): Boolean;
+var
+  i: Integer;
+  resVal: Double;
+  tmp: TArray<Double>;
+begin
+  SetLength(tmp, 0);
+  with frmMain.sgMainData do
+    for i := 0 to High(PhaseList) do
+      if (mask and (1 shl i)) <> 0 then
+      begin
+        if PhaseList[i].IsP then
+          resVal := StrToFloatDef(Cells[2, PhaseList[i].Row], 1e9)  // P residual in col2
+        else
+          resVal := StrToFloatDef(Cells[5, PhaseList[i].Row], 1e9); // S residual in col5
+
+        if Abs(resVal) >= 1 then
+          Exit(False);
+
+        SetLength(tmp, Length(tmp) + 1);
+        tmp[High(tmp)] := resVal;
+      end;
+
+  ResOut := tmp;
+  Result := True;
+end;
+
+{-------------------------------------------------------------------------------
+  BruteForceSearch:
+  - Build phase list.
+  - For each valid mask:
+      • Apply mask, run plot/update clicks.
+      • Read RMS.
+      • If RMS < 1 and residuals all < 1, store mask + stats.
+  - After all masks, choose the combo with the largest (P+S); tie-break on lowest RMS.
+  - Re-apply that mask and finalize.
+-------------------------------------------------------------------------------}
+procedure BruteForceSearch;
+var
+  mask, maxMask: Cardinal;
+  ComboList: TArray<TComboInfo>;
+  ci: TComboInfo;
+  bestIdx, i: Integer;
+  sw: TStopwatch;
+  elapsed: Double;
+begin
+  // initial data load & plotting
+  frmMain.EQP_dataClick(nil);
+  frmMain.PlotClick(nil);
+  frmMain.RePlotClick(nil);
+
+  sw := TStopwatch.StartNew;
+  BuildPhaseList;
+  if Length(PhaseList) = 0 then
+    raise Exception.Create('No valid P/S picks found');
+
+  maxMask := (1 shl Length(PhaseList)) - 1;
+  ComboList := nil;
+
+  // iterate masks
+  for mask := 1 to maxMask do
+    if MaskIsValid(mask) then
+    begin
+      ApplyMask(mask);
+
+      // run solver sequence
+      frmMain.PLOT_DATClick(nil);
+      frmMain.PHILSTA_DATClick(nil);
+
+      frmMain.PLOT_eqClick(nil);
+      frmMain.ExtractResult_headingClick(nil);
+      frmMain.Update_res_PSClick(nil);
+      frmMain.Used_P_SClick(nil);
+
+      ci.RMS := StrToFloatDef(frmMain.ledRMS.Text, 1e9);
+
+      // store only if global RMS < 1 and residuals OK
+      if (ci.RMS < 1) then
+      if ResidualsAreValid(mask, ci.Residuals) then
+      begin
+        ci.Mask  := mask;
+        ci.UsedP := 0;
+        ci.UsedS := 0;
+        for i := 0 to High(PhaseList) do
+          if (mask and (1 shl i)) <> 0 then
+            if PhaseList[i].IsP then
+              Inc(ci.UsedP)
+            else
+              Inc(ci.UsedS);
+
+        i := Length(ComboList);
+        SetLength(ComboList, i + 1);
+        ComboList[i] := ci;
+      end;
+    end;
+
+  // pick the best combination
+  if Length(ComboList) = 0 then
+    raise Exception.Create('No combination satisfied RMS < 1 and residual < 1');
+
+  bestIdx := 0;
+  for i := 1 to High(ComboList) do
+    if (ComboList[i].UsedP + ComboList[i].UsedS) >
+       (ComboList[bestIdx].UsedP + ComboList[bestIdx].UsedS) then
+      bestIdx := i
+    else if ((ComboList[i].UsedP + ComboList[i].UsedS) =
+             (ComboList[bestIdx].UsedP + ComboList[bestIdx].UsedS)) and
+            (ComboList[i].RMS < ComboList[bestIdx].RMS) then
+      bestIdx := i;
+
+  // re-apply best mask
+  ApplyMask(ComboList[bestIdx].Mask);
+  frmMain.PLOT_DATClick(nil);
+  frmMain.PHILSTA_DATClick(nil);
+  frmMain.PLOT_eqClick(nil);
+  frmMain.ExtractResult_headingClick(nil);
+  frmMain.Update_res_PSClick(nil);
+  frmMain.Used_P_SClick(nil);
+
+  sw.Stop;
+  elapsed := sw.ElapsedMilliseconds / 1000;
+
+  // summary
+  ShowMessage(Format(
+    'Brute-force complete:'#13#10 +
+    '  Kept %d combinations (RMS < 1, residuals < 1)'#13#10 +
+    '  BEST uses %d P + %d S  (mask=%u)'#13#10 +
+    '  Best RMS = %.4f'#13#10 +
+    '  Elapsed time = %.2f s',
+    [Length(ComboList),
+     ComboList[bestIdx].UsedP,
+     ComboList[bestIdx].UsedS,
+     ComboList[bestIdx].Mask,
+     ComboList[bestIdx].RMS,
+     elapsed]
+  ));
+end;
+
+end.
+

@@ -1,0 +1,122 @@
+unit UTILS_Output;
+
+interface
+
+uses Classes, System.StrUtils, IOUtils, SysUtils;
+
+procedure SaveSolution(OutFile : string);
+
+implementation
+
+uses EQPX_1;
+
+procedure SaveSolution(OutFile : string);
+var
+  slOutput: TStringList;
+  s: string;
+  numP, numS, usedP, usedS: string;
+  i: Integer;
+  sta, pri, sec, dur: string;
+  Ml, Mb, Ms: Single;
+  officeLat, officeLon, eqLat, eqLon, distance, bearing: Double;
+  nearestCity, nearestTown, nearestFault: string;
+  Year, Month, Day, FilePath: string;
+begin
+
+  Year := LeftStr(OutFile, 4);
+  Month := Copy(OutFile, 6, 2);
+  Day := Copy(OutFile, 8, 2);
+
+//  FilePath := TPath.Combine(BasePath, Year);
+  FilePath := TPath.Combine(frmMain.ledDrive_default.Text,  frmMain.ledBase_path.Text);
+  FilePath := TPath.Combine(FilePath, frmMain.ledSolution_path.Text);
+  FilePath := TPath.Combine(FilePath, Year);
+  FilePath := TPath.Combine(FilePath, Month);
+  FilePath := TPath.Combine(FilePath, Day);
+
+  if not DirectoryExists(FilePath) then
+    ForceDirectories(FilePath);
+
+  // Save the file to the FilePath directory
+//  TFile.WriteAllText(TPath.Combine(FilePath, OutFile), 'File content goes here');
+
+  numP := FormatFloat('00', StrToFloat(frmMain.edtTotal_P.Text));
+  numS := FormatFloat('00', StrToFloat(frmMain.edtTotal_S.Text));
+  usedP := FormatFloat('00', StrToFloat(frmMain.edtUsed_P.Text));
+  usedS := FormatFloat('00', StrToFloat(frmMain.edtUsed_S.Text));
+
+//  Ml := StrToFloat(frmMain.sgMainData.Cells[10, 0]);
+  Ml := StrToFloat(frmMain.ledMagnitude.Text);
+  Mb := (Sqr(Ml) * 0.01) + (Ml * 0.8) + 1.7;
+  Ms := (Mb - 2.5) / 0.63;
+
+  slOutput := TStringList.Create;
+  try
+//------------------
+    slOutput.Add('[Version] EQP_X ' + frmMain.lblVersion.Caption);
+//------------------
+    slOutput.Add('[Date] ' + frmMain.lblDateTime_output.Caption);
+//------------------
+    slOutput.Add('[Data] ' +'P=' + numP +'/'+ usedP +' S='+  numS +'/'+ usedS);
+    slOutput.Add('sta   pri      sec      dur');
+
+    for i := 1 to frmMain.sgMainData.RowCount - 1 do
+    begin
+      sta := Trim(frmMain.sgMainData.Cells[0, i]);  // get the value from sgAtlasPick
+      pri := Trim(frmMain.sgMainData.Cells[1, i]);
+      sec := Trim(frmMain.sgMainData.Cells[4, i]);
+      dur := Trim(frmMain.sgMainData.Cells[7, i]);
+      if frmMain.sgMainData.Cells[3, i] = '*' then
+        pri := '*' + pri;
+
+      if frmMain.sgMainData.Cells[6, i] = '*' then begin
+        sec := '*' + sec;
+    //    sec := sec.PadLeft(9);
+      end;
+
+      if Length(sta) = 3 then begin
+        pri := pri.PadLeft(10);
+      end
+      else begin
+        pri := pri.PadLeft(9);
+      end;
+        sec := sec.PadLeft(9);
+      dur := dur.PadLeft(5);
+      slOutput.Add(sta + pri + sec + dur);
+    end;
+
+//------------------
+    slOutput.Add('[Result]');
+    slOutput.AddStrings(frmMain.mmoResult.Lines);
+//------------------
+    slOutput.Add('[Magnitude] ' + Format('Ms %.1f/Mb %.1f/Ml %.1f', [Ms, Mb, Ml]));
+    s := '';
+    for i := 1 to frmMain.sgMainData.RowCount - 1 do
+    begin
+      if frmMain.sgMainData.Cells[10, i] <> '' then
+      begin
+        s := s + '/' + frmMain.sgMainData.Cells[0, i];
+      end;
+    end;
+    slOutput.Add(s);
+//------------------
+    slOutput.Add('[Location]');
+    slOutput.Add(frmMain.lblQVP_distance.Caption);
+    slOutput.Add(frmMain.lblCity_nearest.Caption);
+    slOutput.Add(frmMain.lblTown_nearest.Caption);
+    slOutput.Add(frmMain.lblFaultLine_nearest.Caption);
+//------------------
+    slOutput.Add('[Intensity]');
+    slOutput.AddStrings(GlobalVars.slEQweb_intensity);
+//------------------
+    slOutput.Add('[Filename] ' + frmMain.ledFilename.Text);
+    slOutput.Add('[Issued] '  + FormatDateTime('dd mmm yyyy / hh:nn AM/PM', Now));
+    slOutput.Add('[IssuedBy] ' + frmMain.ledPrepared_by.Text);
+
+    slOutput.SaveToFile(FilePath +'\'+ OutFile);
+  finally
+    slOutput.Free;
+  end;
+end;
+
+end.

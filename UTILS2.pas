@@ -1,0 +1,247 @@
+unit UTILS2;
+
+interface
+
+uses Dialogs, SysUtils, System.StrUtils, Grids, System.Generics.Collections;
+
+procedure RemoveOutliers_magnitude(sgData: TStringGrid; startRow, endRow: Integer);
+
+function Remaining_PS: Boolean;
+
+function CheckValuesAndAddAsterisk_S(RMS_limit: Double): Boolean;
+function CheckValuesAndAddAsterisk_P(RMS_limit: Double): Boolean;
+
+function Highest_PS(P_S: Char) : Integer;
+
+procedure DoFilterTime(FilterKind: string);
+  function MinutesWindowForMagnitude(const Mag: Single): Integer; inline;
+  function GetCutoffDistance(const eqMag: Single): single;
+
+implementation
+
+uses EQPX_1, UTILS_PhaseData, UTILS_ATLAS;
+
+procedure DoFilterTime(FilterKind: string);
+var
+  DateStr, TimeStr: string;
+  eqMag: Single;
+  CutoffMin: Integer;
+begin
+  DateStr := frmMain.ledEQ_datex.Text;
+  TimeStr := frmMain.ledEQ_timex.Text;
+
+  if not TryStrToFloat(frmMain.ledEQ_Mag.Text, eqMag) then
+  begin
+    ShowMessage('Invalid magnitude. Please check the magnitude input.');
+    Exit;
+  end;
+
+  // If you want to use the dynamic helper, otherwise use ledTime_cutoff.Text if you want direct user control
+  CutoffMin := UTILS2.MinutesWindowForMagnitude(eqMag);
+
+  if SameText(FilterKind, 'PHASEDATA') then
+    UTILS_PhaseData.PhaseData_Filter_Time2(frmMain.sgPhaseData, frmMain.sgPhaseData_Filter_Time, DateStr, TimeStr, CutoffMin)
+  else if SameText(FilterKind, 'ATLAS') then
+    UTILS_ATLAS.Filter_Time(frmMain.mmoATLAS_files, DateStr, TimeStr, CutoffMin, frmMain.mmoATLAS_files2)
+  else
+    ShowMessage('Unknown filter type!');
+end;
+
+{------------------------------------------------------------------------------}
+function MinutesWindowForMagnitude(const Mag: Single): Integer; inline;
+begin
+  if      Mag < 2.5 then Result := 2
+  else if Mag < 3.0 then Result := 5
+  else if Mag < 4.0 then Result := 10
+  else if Mag < 5.0 then Result := 15
+  else if Mag < 6.0 then Result := 20
+  else                   Result := 30;
+end;
+
+{------------------------------------------------------------------------------}
+function GetCutoffDistance(const eqMag: Single): single;
+begin
+  Result :=  2000;
+
+  // Define distance caps up to M6; above that returns Infinity (i.e. no limit)
+  if      eqMag < 2.5 then Result :=  140  // 50
+  else if eqMag < 3.0 then Result :=  250  // 100
+  else if eqMag < 3.5 then Result :=  350  // 200
+  else if eqMag < 4.0 then Result :=  450  // 350
+  else if eqMag < 4.5 then Result :=  550  // 400
+  else if eqMag < 5.0 then Result :=  650  // 500
+  else if eqMag < 6.0 then Result :=  750  // 600;
+end;
+
+{------------------------------------------------------------------------------}
+procedure RemoveOutliers_magnitude(sgData: TStringGrid; startRow, endRow: Integer);
+var
+  i, ctr: Integer;
+  Mag, temp, fAveMag, fVariance, fStdDeviation, fStdDev1, fStdDev2: Single;
+  MagValues: TList<Single>; // Declare a new variable for the list of Mag values
+  validMagSum, validMagCount: Single;
+begin
+  validMagSum := 0;
+  validMagCount := 0;
+
+  // Create the list of Mag values
+  MagValues := TList<Single>.Create;
+  try
+    // Fill the list with Mag values from the sgData, skipping empty cells
+    for i := startRow to endRow do
+    begin
+      if Trim(sgData.Cells[9, i]) <> '' then // Check if the cell is not empty
+      begin
+        Mag := StrToFloat(sgData.Cells[9, i]);
+        MagValues.Add(Mag);
+      end;
+    end;
+    // Compute the mean
+    ctr := 0;
+    fAveMag := 0;
+    for i := 0 to MagValues.Count - 1 do
+    begin
+      inc(ctr);
+      fAveMag := fAveMag + MagValues[i];
+    end;
+    fAveMag := fAveMag / ctr;
+    // Compute the variance
+    fVariance := 0;
+    for i := 0 to MagValues.Count - 1 do
+    begin
+      temp := Sqr(MagValues[i] - fAveMag);
+      fVariance := fVariance + temp;
+    end;
+    fVariance := fVariance / ctr;
+    // Compute the standard deviation
+    fStdDeviation := Sqrt(fVariance);
+    // Define the upper and lower boundaries for outliers
+    fStdDev1 := fAveMag + fStdDeviation;
+    fStdDev2 := fAveMag - fStdDeviation;
+    // Write valid Mag values to column 10 and compute their average
+    for i := startRow to endRow do
+    begin
+      if sgData.Cells[9, i] <> '' then // Skip empty cells
+      begin
+        Mag := StrToFloat(sgData.Cells[9, i]);
+        if (Mag >= fStdDev2) and (Mag <= fStdDev1) then
+        begin
+          // Write the Mag value
+          sgData.Cells[10, i] := FormatFloat('0.00', Mag);
+          validMagSum := validMagSum + Mag;
+          validMagCount := validMagCount + 1;
+        end;
+      end;
+    end;
+
+  finally
+    MagValues.Free;
+  end;
+
+  // Compute the average of valid Mag values and write it to the top of column 10
+  if validMagCount > 0 then
+  begin
+//    sgData.Cells[10, 0] := FormatFloat('0.00', validMagSum / validMagCount);
+    frmMain.ledMagnitude.Text := FormatFloat('0.00', validMagSum / validMagCount);
+  end;
+end;
+
+
+function Remaining_PS: Boolean;
+begin
+  Result := (StrToInt(frmMain.edtUsed_P.Text) >= 3) and (StrToInt(frmMain.edtUsed_S.Text) >= 1);
+end;
+
+function CheckValuesAndAddAsterisk_S(RMS_limit: Double): Boolean;
+var
+  i: Integer;
+  value: Double;
+  found: Boolean;
+begin
+  found := False;
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    if frmMain.sgMainData.Cells[0, i] = '' then break;
+    value := Abs(StrToFloatDef(frmMain.sgMainData.Cells[5, i], -1)); // Read value
+
+    if (value >= RMS_limit) and (Trim(frmMain.sgMainData.Cells[6, i]) = '') then begin
+      frmMain.sgMainData.Cells[6, i] := '*'; // Add *
+      found := True;
+    end
+    else
+//      frmMain.sgMainData.Cells[6, i] := ''; // Clear column 6 if value is less than RMS_limit
+  end;
+  Result := found;
+end;
+
+function CheckValuesAndAddAsterisk_P(RMS_limit: Double): Boolean;
+var
+  i: Integer;
+  value: Double;
+  found: Boolean;
+begin
+  found := False;
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    if frmMain.sgMainData.Cells[0, i] = '' then break;
+    value := Abs(StrToFloatDef(frmMain.sgMainData.Cells[2, i], -1)); // Read value from
+
+    if (value >= RMS_limit) and (Trim(frmMain.sgMainData.Cells[3, i]) = '') then begin
+      frmMain.sgMainData.Cells[3, i] := '*'; // Add * to
+      found := True;
+    end
+    else
+//      frmMain.sgMainData.Cells[6, i] := ''; // Clear column 6 if value is less than RMS_limit
+  end;
+  Result := found;
+end;
+//-----------------
+function Highest_PS(P_S: Char) : Integer;
+var
+  i, highestValueRow: Integer;
+  highestValue, currentValue: Double;
+  columnValue, columnMarker: Integer;
+  ctr: Integer;
+begin
+  Result := -1; // Default return value indicating no row found.
+  // Assign column numbers based on the data type.
+  if P_S = 'P' then
+  begin
+    columnValue := 2;
+    columnMarker := 3;
+  end
+  else // Assume 'S'
+  begin
+    columnValue := 5;
+    columnMarker := 6;
+  end;
+  // Exit if there is no data to process.
+  if frmMain.sgMainData.RowCount < 2 then
+    Exit;
+  // Initialize the highest value as 0 and the highest value row as 1.
+  highestValue := 0.0;
+  highestValueRow := 1;
+  // Get the row count and iterate through the rows of the grid.
+  ctr := frmMain.sgMainData.RowCount;
+  for i := 1 to ctr - 1 do
+  begin
+    // Continue to the next iteration if the current cell in the marker column has an asterisk.
+    if (frmMain.sgMainData.Cells[columnMarker, i]  = '*') then continue;
+    // Get the absolute value of the current cell in the value column, using the highest value as a default.
+    currentValue := Abs(StrToFloatDef(frmMain.sgMainData.Cells[columnValue, i], highestValue ));
+    // Check if the current value is greater than the highest value found so far.
+    if currentValue > highestValue then
+    begin
+      // If so, update the highest value and the highest value row.
+      highestValue := currentValue;
+      highestValueRow := i;
+    end;
+  end;
+  // Return the row number of the highest value only if the highest value is greater than or equal to 1.
+  if highestValue >= 1 then
+    Result := highestValueRow
+  else
+    Result := -1; // Return -1 if the highest value is less than 1.
+end;
+
+end.

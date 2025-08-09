@@ -1,0 +1,26 @@
+unit UTILS_Math;
+
+interface
+
+uses Math;
+
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+
+implementation
+
+function Haversine(lat1, lon1, lat2, lon2: Double): Double;
+const
+  R = 6371; // Earth's radius in kilometers
+var
+  dLat, dLon, a, c: Double;
+begin
+  dLat := DegToRad(lat2 - lat1);
+  dLon := DegToRad(lon2 - lon1);
+
+  a := Sin(dLat / 2) * Sin(dLat / 2) + Cos(DegToRad(lat1)) * Cos(DegToRad(lat2)) * Sin(dLon / 2) * Sin(dLon / 2);
+  c := 2 * ArcTan2(Sqrt(a), Sqrt(1 - a));
+
+  Result := R * c; // Distance in kilometers
+end;
+
+end.

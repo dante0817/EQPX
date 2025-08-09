@@ -1,0 +1,16 @@
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 562
+#event, externalId
+event,0
+# solution, name, region name, seismic region, seismic location,located?
+solution,00:00:00.0000,,0,0,false
+# origin, time, comment, source, latitude, longitude, depth, fixed depth?, latitude error, longitude error, depth error, rms, azm gap, err0, err0 azm, err0 dip, err1, err1 azm, err1 dip, err2, err2 azm, err2 dip, mci, min dist, num first motions, num phases assoc,num phases used, num readings assoc, num readings used, num s phases
+origin,1970-01-01 00:00:00.0000,,,-90.0,-180.0,9,999.99,0,-90,-180,9999.99,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+# magnitude, comment, source, magnitude, mag type, mag err, med abs diff
+# station_amplitude_magnitude, network, station, channel, location, magnitude, wt code, amp mag type, time amp1, amp1, time amp2, amp2
+# station_coda_magnitude, network, station, channel, location, magnitude, wt code, tcodadurobs, tcodadurxtp, tcodatermobs, tcodatermxtp
+# arrival, network, station, channel, location, obs phase, obs time, initial motion, onset, weight code, user name, earliest obs time, latest obs time, calc phase, calc time, azimuth, delay, distance, importance, take off, residual, weight used, sigma
+# phase, network, station, channel, location, phase, time, first motion, onset, weight code, user, earliest time, latest time
+phase,PV,BOAC,EHZ,,P,2020-01-02 11:29:31.8599,D,E,0,NMD,,
+# coda, network, station, channel, location, time, weight code
+# amp, network, station, channel, location, time first amplitude, first amplitude, time second amplitude, second amplitude, mean amplitude, weight code
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 562

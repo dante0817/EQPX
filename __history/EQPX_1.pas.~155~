@@ -1,0 +1,672 @@
+unit EQPX_1;
+
+interface
+
+uses
+  System.DateUtils, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
+  Vcl.WinXCalendars, Vcl.Grids, Vcl.Samples.Calendar, Vcl.Mask, StrUtils, Generics.Collections,
+  Vcl.WinXPickers;
+
+type
+  TfrmMain = class(TForm)
+    pnlMain: TPanel;
+    Panel1: TPanel;
+    pgMain: TPageControl;
+    tsEQBulletin: TTabSheet;
+    tsSettings: TTabSheet;
+    grpMain: TGroupBox;
+    lblProgramPath: TLabel;
+    cdrvwEQ_events1: TCalendarView;
+    tsATLAS: TTabSheet;
+    tsSTATIONS: TTabSheet;
+    sgSOEPD_stations: TStringGrid;
+    btnStations: TButton;
+    tsDB: TTabSheet;
+    Panel2: TPanel;
+    Panel3: TPanel;
+    lvEQ_events: TListView;
+    btnEQevents: TButton;
+    Panel4: TPanel;
+    gbxEQ_params: TGroupBox;
+    ledEQ_datex: TLabeledEdit;
+    ledEQ_timex: TLabeledEdit;
+    ledEQ_Lat: TLabeledEdit;
+    ledEQ_Lon: TLabeledEdit;
+    ledEQ_Dep: TLabeledEdit;
+    ledEQ_Mag: TLabeledEdit;
+    btnExtract_DateTime: TButton;
+    ledMag_max: TLabeledEdit;
+    DB: TButton;
+    Panel5: TPanel;
+    ListAtlas_files: TButton;
+    Filter_time: TButton;
+    Extract_EQinfo: TButton;
+    Filter_distance: TButton;
+    Atlas: TButton;
+    ledTime_cutoff: TLabeledEdit;
+    Panel6: TPanel;
+    mmoATLAS_files2: TMemo;
+    mmoATLAS_files: TMemo;
+    mmoATLAS_files_final: TMemo;
+    Panel7: TPanel;
+    sgAtlas_data: TStringGrid;
+    sgAtlasData2: TStringGrid;
+    sgAtlasData_Final: TStringGrid;
+    Combine_AtlasPS: TButton;
+    tsPhaseData: TTabSheet;
+    Panel8: TPanel;
+    Panel9: TPanel;
+    sgPhaseData: TStringGrid;
+    PhaseData_extract: TButton;
+    sgPhaseData_Filter_Time: TStringGrid;
+    PhaseData_Filter_Time: TButton;
+    sgPhaseData_Filter_Distance: TStringGrid;
+    PhaseData_Filter_Distance: TButton;
+    PhaseData: TButton;
+    Plot_1st: TButton;
+    ConvertDateTime_format: TButton;
+    CombineData: TButton;
+    btnSetDateTimePicker: TButton;
+    DateTimePicker_update: TButton;
+    tsEQP: TTabSheet;
+    pnl1: TPanel;
+    pnl2: TPanel;
+    pnl3: TPanel;
+    GroupBox8: TGroupBox;
+    ledMInimum_P: TLabeledEdit;
+    ledMInimum_S: TLabeledEdit;
+    ledError_Pmin: TLabeledEdit;
+    ledError_Smin: TLabeledEdit;
+    gbxEQP_data: TGroupBox;
+    EQ_data: TButton;
+    PLOT_DAT: TButton;
+    PHILSTA_DAT: TButton;
+    EQP_data: TButton;
+    gbxPLOT: TGroupBox;
+    PLOT_eq: TButton;
+    ExtractResult_heading: TButton;
+    Update_res_PS: TButton;
+    Plot: TButton;
+    Used_P_S: TButton;
+    gbxRePlot: TGroupBox;
+    AutoPlot1: TButton;
+    RePlot: TButton;
+    RePlot_orig: TButton;
+    Plot_again: TButton;
+    Panel11: TPanel;
+    edtHighestP_STN: TEdit;
+    edtHighestS_STN: TEdit;
+    ledHighestP_rms: TLabeledEdit;
+    ledHighestS_rms: TLabeledEdit;
+    ledRMS: TLabeledEdit;
+    edtRMSX: TEdit;
+    ledLat: TLabeledEdit;
+    ledLon: TLabeledEdit;
+    ledDep: TLabeledEdit;
+    cbxInitialPlot: TCheckBox;
+    Button3: TButton;
+    Panel10: TPanel;
+    GroupBox18: TGroupBox;
+    edtTotal_P: TEdit;
+    edtUsed_P: TEdit;
+    edtTotal_S: TEdit;
+    edtUsed_S: TEdit;
+    edtError_P: TEdit;
+    edtError_S: TEdit;
+    Panel12: TPanel;
+    sgMainData: TStringGrid;
+    mmoResult: TMemo;
+    Highest_S: TButton;
+    Highest_P: TButton;
+    dtpEQDateTime: TDateTimePicker;
+    dtpEQ_datetime_start_GMT: TDateTimePicker;
+    ledMagnitude: TLabeledEdit;
+    ledEQ_name: TLabeledEdit;
+    pnl4: TPanel;
+    Panel13: TPanel;
+    gbxBulletin_dirs: TGroupBox;
+    ledSolution_path: TLabeledEdit;
+    ledBulletin_path: TLabeledEdit;
+    ledBase_path: TLabeledEdit;
+    ledDrive_default: TLabeledEdit;
+    ledEQBulletin_temp: TLabeledEdit;
+    ledEQBulletin_template: TLabeledEdit;
+    ledEQMap_temp: TLabeledEdit;
+    Panel14: TPanel;
+    lblVersion: TLabel;
+    Panel15: TPanel;
+    Label2: TLabel;
+    Label3: TLabel;
+    GroupBox16: TGroupBox;
+    lblQVP_distance: TLabel;
+    lblCity_nearest: TLabel;
+    lblTown_nearest: TLabel;
+    lblFaultLine_nearest: TLabel;
+    gbxMagnitude: TGroupBox;
+    RemoveOutliers_mag: TButton;
+    dtpEQEvents: TDateTimePicker;
+    btnSetDate: TButton;
+    btnAutoBrute: TButton;
+    btnMagnitude: TButton;
+    procedure btnEQeventsClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure cdrvwEQ_events1Change(Sender: TObject);
+    procedure ListAtlas_filesClick(Sender: TObject);
+    procedure btnExtract_DateTimeClick(Sender: TObject);
+    procedure Filter_timeClick(Sender: TObject);
+    procedure DBClick(Sender: TObject);
+    procedure Extract_EQinfoClick(Sender: TObject);
+    procedure btnStationsClick(Sender: TObject);
+    procedure Filter_distanceClick(Sender: TObject);
+    procedure AtlasClick(Sender: TObject);
+    procedure Combine_AtlasPSClick(Sender: TObject);
+    procedure PhaseData_extractClick(Sender: TObject);
+    procedure PhaseData_Filter_TimeClick(Sender: TObject);
+    procedure PhaseData_Filter_DistanceClick(Sender: TObject);
+    procedure PhaseDataClick(Sender: TObject);
+    procedure Plot_1stClick(Sender: TObject);
+    procedure CombineDataClick(Sender: TObject);
+    procedure ConvertDateTime_formatClick(Sender: TObject);
+    procedure btnSetDateTimePickerClick(Sender: TObject);
+    procedure DateTimePicker_updateClick(Sender: TObject);
+    procedure EQ_dataClick(Sender: TObject);
+    procedure PLOT_DATClick(Sender: TObject);
+    procedure PHILSTA_DATClick(Sender: TObject);
+    procedure EQP_dataClick(Sender: TObject);
+    procedure PLOT_eqClick(Sender: TObject);
+    procedure ExtractResult_headingClick(Sender: TObject);
+    procedure Update_res_PSClick(Sender: TObject);
+    procedure Highest_SClick(Sender: TObject);
+    procedure Highest_PClick(Sender: TObject);
+    procedure PlotClick(Sender: TObject);
+    procedure Used_P_SClick(Sender: TObject);
+    procedure RePlotClick(Sender: TObject);
+    procedure AutoPlot1Click(Sender: TObject);
+    procedure Plot_againClick(Sender: TObject);
+    procedure RePlot_origClick(Sender: TObject);
+    procedure RemoveOutliers_magClick(Sender: TObject);
+    procedure btnSetDateClick(Sender: TObject);
+    procedure btnAutoBruteClick(Sender: TObject);
+    procedure btnMagnitudeClick(Sender: TObject);
+
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmMain: TfrmMain;
+
+implementation
+
+{$R *.dfm}
+
+uses UTILS_Brute_Force, UTILS_DB, UTILS_fileIO, UTILS_settings, UTILS_DateTime, UTILS_ATLAS,
+  UTILS_stations, UTILS_PhaseData, UTILS_CombineData, EQPlotter_data, UTILS,
+  EQPlot, UTILS2, UTILS_Math;
+
+procedure TfrmMain.CombineDataClick(Sender: TObject);
+begin
+  CombineAndUpdateAtlasData(sgPhaseData_Filter_Distance, sgAtlasData_Final);
+end;
+
+procedure TfrmMain.Combine_AtlasPSClick(Sender: TObject);
+begin
+  UTILS_ATLAS.CombineAtlasPS(sgAtlasData2, sgAtlasData_final);
+end;
+
+procedure TfrmMain.ConvertDateTime_formatClick(Sender: TObject);
+var
+  Row: Integer;
+  TimeStr, FormattedDateTime: string;
+begin
+  // Loop through all rows, starting from row 1 (assuming row 0 is the header)
+  for Row := 1 to sgPhaseData_Filter_Distance.RowCount - 1 do
+  begin
+    // Process column 3 (P arrival time)
+    TimeStr := sgPhaseData_Filter_Distance.Cells[3, Row];
+    if Trim(TimeStr) <> '' then
+    begin
+      try
+        FormattedDateTime := ConvertTimeWithDate(TimeStr, ledEQ_datex);
+//        FormattedDateTime := ConvertTimeWithDate(TimeStr, ledEQ_datex);
+        FormattedDateTime := Copy(FormattedDateTime, 1, Length(FormattedDateTime));
+        sgPhaseData_Filter_Distance.Cells[3, Row] := FormattedDateTime;
+      except
+        on E: Exception do
+          ShowMessage('Error on row ' + IntToStr(Row) + ' in column 3: ' + E.Message);
+      end;
+    end;
+
+    // Process column 5 (S arrival time)
+    TimeStr := sgPhaseData_Filter_Distance.Cells[5, Row];
+    if Trim(TimeStr) <> '' then
+    begin
+      try
+        FormattedDateTime := ConvertTimeWithDate(TimeStr, ledEQ_datex);
+        // Drop the third decimal place if present
+        FormattedDateTime := Copy(FormattedDateTime, 1, Length(FormattedDateTime));
+        sgPhaseData_Filter_Distance.Cells[5, Row] := FormattedDateTime;
+      except
+        on E: Exception do
+          ShowMessage('Error on row ' + IntToStr(Row) + ' in column 5: ' + E.Message);
+      end;
+    end;
+  end;
+
+  // Optional: Display a message when the conversion is complete
+//  ShowMessage('DateTime conversion completed.');
+end;
+
+procedure TfrmMain.btnAutoBruteClick(Sender: TObject);
+var
+  mask, bestMask, maxMask: Cardinal;
+  bestRMS, rms: Double;
+begin
+  UTILS_Brute_Force.BruteForceSearch;
+
+  exit;
+
+  UTILS_Brute_Force.BuildPhaseList;                 // collect every in-grid pick
+  if Length(PhaseList) = 0 then Exit;
+
+  // build PHILSTA.DAT once
+  PHILSTA_DATClick(nil);
+
+  maxMask  := (1 shl Length(PhaseList)) - 1;
+  bestRMS  := 1E30;
+  bestMask := 0;
+
+  // save pristine grid so we can restore quickly
+  var OriginalRows := TStringList.Create;
+  try
+    OriginalRows.Assign(sgMainData.Rows[0]);
+    for var r := 1 to sgMainData.RowCount-1 do
+      OriginalRows.Add(sgMainData.Rows[r].Text);
+
+    for mask := 1 to maxMask do
+    begin
+      if not UTILS_Brute_Force.MaskIsValid(mask) then Continue;
+
+      // restore grid then apply mask
+      for var r := 0 to sgMainData.RowCount-1 do
+        sgMainData.Rows[r].DelimitedText := OriginalRows[r];
+
+      UTILS_Brute_Force.ApplyMask(mask);
+
+      PLOT_DATClick(nil);   // write new PLOT.DAT
+      PlotClick(nil);       // run plotter + parse RMS
+
+      rms := StrToFloatDef(ledRMS.Text, 1E30);
+      if rms < bestRMS then
+      begin
+        bestRMS  := rms;
+        bestMask := mask;
+      end;
+    end;
+
+    // final: restore pristine grid and apply best solution
+    for var r := 0 to sgMainData.RowCount-1 do
+      sgMainData.Rows[r].DelimitedText := OriginalRows[r];
+    ApplyMask(bestMask);
+    PLOT_DATClick(nil);
+    PlotClick(nil);
+
+    ShowMessage(Format('Auto-Brute complete — best RMS = %.3f',[bestRMS]));
+  finally
+    OriginalRows.Free;
+  end;
+end;
+
+procedure TfrmMain.btnEQeventsClick(Sender: TObject);
+var
+  Year, Month, Day: Word;
+  MaxMagnitude: Double;
+  SelectedDate: TDateTime;
+begin
+  // Get the date from the DateTimePicker instead of using constants
+  SelectedDate := dtpEQEvents.Date;
+  DecodeDate(SelectedDate, Year, Month, Day);
+
+  // Get the maximum magnitude from the LabeledEdit
+  MaxMagnitude := StrToFloat(ledMag_max.Text);
+
+  // Set up the ListView with columns using the procedure from UTILS_settings
+  UTILS_settings.SetupListView(lvEQ_events);
+
+  // Pass the year, month, day, and max magnitude to the procedure
+  BrowseEarthquakeData(Year, Month, Day, lvEQ_events, lblProgramPath.Caption, MaxMagnitude);
+end;
+
+procedure TfrmMain.EQP_dataClick(Sender: TObject);
+begin
+  EQ_dataClick(nil);
+  PLOT_DATClick(nil);
+  PHILSTA_DATClick(nil);
+end;
+
+procedure TfrmMain.Filter_timeClick(Sender: TObject);
+begin
+  UTILS2.DoFilterTime('ATLAS');
+end;
+
+procedure TfrmMain.Filter_distanceClick(Sender: TObject);
+var
+  eqMag: Single;
+  Cutoff_Distance: single;
+begin
+  // Retrieve the earthquake magnitude from the labeled edit
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  Cutoff_Distance := UTILS2.GetCutoffDistance(eqMag);
+
+  // Call the ComputeHypocentralDistance procedure with the calculated cutoff distance
+  UTILS_ATLAS.FilterDistance(sgAtlas_data, sgSOEPD_stations, sgAtlasData2,
+                  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag, Cutoff_Distance);
+end;
+
+procedure TfrmMain.ExtractResult_headingClick(Sender: TObject);
+begin
+  EQPlot.ExtractResult_hdg(Trim(frmMain.mmoResult.Lines[2]));
+end;
+
+procedure TfrmMain.btnExtract_DateTimeClick(Sender: TObject);
+begin
+//  UTILS_DateTime.ExtractCheckedDateTime(lvEQ_events, ledEQ_datex, ledEQ_timex);
+
+  UTILS_DateTime.ExtractCheckedDateTime(lvEQ_events, ledEQ_datex, ledEQ_timex, ledEQ_Mag, ledEQ_Lat, ledEQ_Lon, ledEQ_Dep);
+end;
+
+procedure TfrmMain.btnMagnitudeClick(Sender: TObject);
+var
+  i: Integer;
+  Station: string;
+  Duration, Delta, Mag: Single;
+begin
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    Station := frmMain.sgMainData.Cells[0, i];
+
+    if TryStrToFloat(frmMain.sgMainData.Cells[7, i], Duration) and
+       TryStrToFloat(frmMain.sgMainData.Cells[8, i], Delta) then
+    begin
+      Mag := ComputeMagnitude(Station, Duration, Delta);
+      frmMain.sgMainData.Cells[9, i] := FormatFloat('0.00', Mag);
+    end;
+  end;
+end;
+
+procedure TfrmMain.Extract_EQinfoClick(Sender: TObject);
+begin
+  UTILS_ATLAS.ExtractSelectedAtlasParametersToGrid(mmoATLAS_files2, sgATLAS_data);
+end;
+
+procedure TfrmMain.ListAtlas_filesClick(Sender: TObject);
+begin
+  UTILS_fileIO.ListAtlasDataFilesInMemo(ledEQ_datex.Text, ledEQ_timex.Text);
+end;
+
+procedure TfrmMain.Plot_1stClick(Sender: TObject);
+begin
+  DBClick(nil);
+  AtlasClick(nil);
+
+  PhaseDataClick(nil);
+  EQP_dataClick(nil);
+
+  PLOTClick(nil);
+
+//  UTILS.CountGreaterEqualOne('P'); // Count the values greater than or equal to 1.0 for 'P'
+//  UTILS.CountGreaterEqualOne('S'); // Count the values greater than or equal to 1.0 for 'S'
+
+end;
+
+procedure TfrmMain.PhaseDataClick(Sender: TObject);
+begin
+  PhaseData_extractClick(nil);
+  PhaseData_Filter_TimeClick(nil);
+  PhaseData_Filter_DistanceClick(nil);
+
+  ConvertDateTime_formatClick(nil);
+  CombineDataClick(nil);
+  DateTimePicker_updateClick(nil);
+end;
+
+procedure TfrmMain.PhaseData_extractClick(Sender: TObject);
+var
+  EQDate: TDateTime;
+  CSVFilePath, ProgramPath: string;
+begin
+  EQDate := ISO8601ToDate(ledEQ_datex.Text);
+  ProgramPath := lblProgramPath.Caption;  // Path from lblProgramPath
+  // Call the conversion procedure
+  ConvertExcelToCSV(EQDate, ProgramPath);
+  CSVFilePath := IncludeTrailingPathDelimiter(ProgramPath) + 'TEMP\temp.csv';
+
+  // Load the CSV data into the TStringGrid (sgPhaseData)
+  LoadCSVToGrid(CSVFilePath, sgPhaseData);
+end;
+
+procedure TfrmMain.PhaseData_Filter_DistanceClick(Sender: TObject);
+var
+  eqMag: Single;
+  Cutoff_Distance: single;
+begin
+  // Retrieve the earthquake magnitude from the labeled edit
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  Cutoff_Distance := UTILS2.GetCutoffDistance(eqMag);
+
+  // Now filter sgPhaseData2 by distance and save the result to sgPhaseData_Filter_Distance
+  UTILS_PhaseData.PhaseData_Filter_Distance(sgPhaseData_Filter_Time, sgSOEPD_stations, sgPhaseData_Filter_Distance,
+                  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag, Cutoff_Distance);
+end;
+
+procedure TfrmMain.PhaseData_Filter_TimeClick(Sender: TObject);
+begin
+  UTILS2.DoFilterTime('PHASEDATA');
+end;
+
+procedure TfrmMain.PHILSTA_DATClick(Sender: TObject);
+begin
+  EQPlotter_data.PHILSTA_dat('PHILSTA.DAT', frmMain.lblProgramPath.Caption);
+end;
+
+procedure TfrmMain.PLOT_DATClick(Sender: TObject);
+begin
+  EQPlotter_data.PLOT_dat('PLOT.DAT');
+ end;
+
+procedure TfrmMain.PLOT_eqClick(Sender: TObject);
+var
+  s : string;
+  i, j, iNumS : integer;
+begin
+  frmMain.mmoResult.Lines.Clear;
+
+  s := frmMain.lblProgramPath.Caption + 'PLOTTER\PLOTTER1a.EXE';
+
+  ChDir(frmMain.lblProgramPath.Caption + 'PLOTTER');
+
+//  Utils.ExecProgram(s,'WAIT', SW_Minimize);
+  UTILS.ExecProgram(s,'WAIT', SW_Minimize);
+
+  frmMain.mmoResult.Lines.LoadFromFile(frmMain.lblProgramPath.Caption + 'PLOTTER\PLOT.OUT');
+
+//  ExtractResultClick(nil);
+
+  ChDir(frmMain.lblProgramPath.Caption);
+end;
+
+procedure TfrmMain.RemoveOutliers_magClick(Sender: TObject);
+begin
+  RemoveOutliers_magnitude(frmMain.sgMainData, 1, frmMain.sgMainData.RowCount - 1);
+end;
+
+procedure TfrmMain.RePlotClick(Sender: TObject);
+begin
+//  if not UTILS2.AreTotalsValid then exit;
+
+  EQPlot.MainReplot;
+end;
+
+procedure TfrmMain.RePlot_origClick(Sender: TObject);
+begin
+  EQPlot.Replot_orig;
+end;
+
+procedure TfrmMain.btnSetDateClick(Sender: TObject);
+begin
+ // Set dtpEQEvents to January 2, 2020
+  dtpEQEvents.Date := EncodeDate(2020, 1, 2);
+end;
+
+procedure TfrmMain.btnSetDateTimePickerClick(Sender: TObject);
+begin
+  SetDateTimePickerFromLabeledEdits(ledEQ_datex, ledEQ_timex, dtpEQ_datetime_start_GMT);
+end;
+
+procedure TfrmMain.btnStationsClick(Sender: TObject);
+var
+  DatabasePath: string;
+begin
+  // Build the full path to the SQLite database
+  DatabasePath := lblProgramPath.Caption + 'DB\SOEPD.sdb';
+  // Load stations data into the TStringGrid
+  LoadStationsToGrid(sgSOEPD_stations, DatabasePath);
+end;
+
+procedure TfrmMain.PlotClick(Sender: TObject);
+begin
+  PLOT_eqClick(nil);
+  ExtractResult_headingClick(nil);
+  Update_res_PSClick(nil);
+
+  Used_P_SClick(nil);
+
+//  Highest_SClick(nil);
+//  Highest_PClick(nil);
+end;
+
+procedure TfrmMain.Plot_againClick(Sender: TObject);
+var i : integer;
+begin
+    for i := 1 to 3 do begin
+      PLOT_datClick(nil);
+      PHILSTA_datClick(nil);
+
+      PlotClick(nil);
+
+//      ExtractResult_headingClick(nil);
+//      Update_res_PSClick(nil);
+//      Used_P_SClick(nil);
+    end;
+
+  frmMain.edtError_P.Text := IntToStr(UTILS.CountGreaterEqualOne('P')); // Count the values greater than or equal to 1.0 for 'P'
+  frmMain.edtError_S.Text := IntToStr(UTILS.CountGreaterEqualOne('S')); // Count the values greater than or equal to 1.0 for 'S'
+end;
+
+procedure TfrmMain.DateTimePicker_updateClick(Sender: TObject);
+begin
+  UpdateDateTimePickerFromGrid;
+end;
+
+procedure TfrmMain.DBClick(Sender: TObject);
+begin
+  btnSetDateClick(nil);
+
+  btnEQeventsClick(nil);
+  btnExtract_DateTimeClick(nil);
+
+  btnSetDateTimePickerClick(nil);
+end;
+
+procedure TfrmMain.EQ_dataClick(Sender: TObject);
+begin
+  EQPlotter_data.EQData(sgMainData);
+end;
+
+procedure TfrmMain.AutoPlot1Click(Sender: TObject);
+begin
+    Plot_1stClick(nil);
+    RePlotClick(nil);
+
+    RePlotClick(nil);
+
+//    Replot_origClick(nil);
+//    Quality_checkClick(nil);
+end;
+
+procedure TfrmMain.AtlasClick(Sender: TObject);
+begin
+  ListAtlas_filesClick(nil);
+  Filter_timeClick(nil);
+  Extract_EQinfoClick(nil);
+
+  Filter_distanceClick(nil);
+  Combine_AtlasPSClick(nil);
+end;
+
+procedure TfrmMain.cdrvwEQ_events1Change(Sender: TObject);
+var
+  SelectedDate: TDateTime;
+  Year, Month, Day: Word;
+  MaxMagnitude: Double;
+begin
+  // Get the selected date from the TCalendarView
+  SelectedDate := cdrvwEQ_events1.Date;
+
+  // Extract year, month, and day as integers
+  DecodeDate(SelectedDate, Year, Month, Day);
+
+  // Get the maximum magnitude from the LabeledEdit
+  MaxMagnitude := StrToFloat(ledMag_max.Text);
+
+  // Clear previous rows (except for the header)
+//  sgEQ_events.RowCount := 1;
+
+  // Pass the year, month, day, and max magnitude to the procedure
+//  BrowseEarthquakeData(Year, Month, Day, sgEQ_events, lblProgramPath.Caption, MaxMagnitude);
+  BrowseEarthquakeData(Year, Month, Day, lvEQ_events, lblProgramPath.Caption, MaxMagnitude);
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  dtpEQDateTime.Format := 'yyyy-MM-dd HH:mm:ss';
+  lblProgramPath.Caption := ExtractFilePath(Application.ExeName);
+
+  cdrvwEQ_events1.OnChange := cdrvwEQ_events1Change;
+
+  btnStationsClick(nil);
+  Initialize_sgMainData_Headers;
+end;
+
+procedure TfrmMain.Highest_PClick(Sender: TObject);
+var row : integer;
+begin
+  row := EQPlot.Highest_PS('P'); // For the first case (P)
+  if (row > 0) and (Abs(StrToFloatDef(frmMain.sgMainData.Cells[2, row], 0)) >= 1.0) then
+    frmMain.sgMainData.Cells[3, row] := '*';
+end;
+
+procedure TfrmMain.Highest_SClick(Sender: TObject);
+var row : integer;
+begin
+  row := EQPlot.Highest_PS('S'); // For the first case (S)
+  if (row > 0) and (Abs(StrToFloatDef(frmMain.sgMainData.Cells[5, row], 0)) >= 1) then
+    frmMain.sgMainData.Cells[6, row] := '*';
+end;
+
+procedure TfrmMain.Update_res_PSClick(Sender: TObject);
+begin
+  EQPlot.Update_resPS_delta;
+end;
+
+procedure TfrmMain.Used_P_SClick(Sender: TObject);
+begin
+  UTILS.CountUsed_PS;
+end;
+
+end.

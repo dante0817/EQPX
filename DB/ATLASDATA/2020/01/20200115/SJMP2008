@@ -1,0 +1,21 @@
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592
+# phase, network, station, channel, location, phase, time, first motion, onset, weight code, user, earliest time, latest time
+phase,PV,SJMP,EHE,,P,2020-01-15 12:50:58.3060,,,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 13:10:35.8734,D,E,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 13:10:51.2032,D,E,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 14:41:45.0541,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 14:42:06.8207,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 16:43:33.6707,D,E,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 16:43:53.0714,D,E,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 18:17:49.6801,D,E,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 18:18:10.7370,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 19:28:51.9237,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 19:29:12.1958,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,P,2020-01-15 20:08:37.3635,U,I,0,MPL,,
+phase,PV,SJMP,EHE,,S,2020-01-15 20:08:55.3782,U,I,0,MPL,,
+# coda, network, station, channel, location, time, weight code
+coda,PV,SJMP,EHE,,2020-01-15 20:10:11.1175,0
+# amp, network, station, channel, location, time first amplitude, first amplitude, time second amplitude, second amplitude, mean amplitude, weight code
+amp,PV,SJMP,EHE,,2020-01-15 16:43:57.5700,-13,2020-01-15 13:10:53.0400,-999,0.0136,0
+amp,PV,SJMP,EHN,,2020-01-15 18:18:13.0100,81,2020-01-15 20:08:57.6800,-507,0.0055,0
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592

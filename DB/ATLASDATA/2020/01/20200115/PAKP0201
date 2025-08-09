@@ -1,0 +1,9 @@
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592
+# phase, network, station, channel, location, phase, time, first motion, onset, weight code, user, earliest time, latest time
+phase,PV,PAKP,BHE,,P,2020-01-15 00:59:51.7229,,,0,MPL,,
+phase,PV,PAKP,BHE,,P,2020-01-15 02:01:25.7488,D,E,0,MPL,,
+# coda, network, station, channel, location, time, weight code
+coda,PV,PAKP,BHE,,2020-01-15 02:08:19.0501,0
+# amp, network, station, channel, location, time first amplitude, first amplitude, time second amplitude, second amplitude, mean amplitude, weight code
+amp,PV,PAKP,BHE,,2020-01-15 02:02:09.6400,-7639,2020-01-15 02:02:09.6400,7683.7893,22.3947,0
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592

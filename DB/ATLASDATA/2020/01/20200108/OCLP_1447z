@@ -1,0 +1,8 @@
+#created by 'PHIVOLCS' with Atlas version 3.0.0.2 S/N: 755
+# phase, network, station, channel, location, phase, time, first motion, onset, weight code, user, earliest time, latest time
+phase,PV,OCLP,EHZ,,P,2020-01-08 14:47:06.0700,U,E,0,JDG,,
+phase,PV,OCLP,EHN,,S,2020-01-08 14:47:09.6635,D,E,0,JDG,,
+# coda, network, station, channel, location, time, weight code
+coda,PV,OCLP,EHZ,,2020-01-08 14:47:54.8345,0
+# amp, network, station, channel, location, time first amplitude, first amplitude, time second amplitude, second amplitude, mean amplitude, weight code
+#created by 'PHIVOLCS' with Atlas version 3.0.0.2 S/N: 755

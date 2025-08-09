@@ -1,0 +1,13 @@
+unit UTILS_CombineData;
+
+interface
+
+uses
+  Vcl.Grids, SysUtils, StrUtils, Vcl.StdCtrls;
+
+implementation
+
+uses EQPX_1;
+
+end.
+

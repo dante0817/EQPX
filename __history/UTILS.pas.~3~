@@ -1,0 +1,36 @@
+unit Utils;
+
+interface
+
+uses
+  FireDAC.Comp.Client, FireDAC.Stan.Def, FireDAC.Stan.Param, StrUtils, SysUtils;
+
+function ExtractDateTime(sDateTime : string) : string;
+
+implementation
+
+function ExtractDateTime(sDateTime : string) : string;
+var
+  wX, wYr, wMon, wDay, wHr, wMin, wSec, wMSec : Word;
+  s, x : string;
+  dt: TDateTime;
+  fs: TFormatSettings;
+begin
+  fs := TFormatSettings.Create;
+  fs.DateSeparator := '-';
+
+  fs.ShortDateFormat := 'yyyy-MM-dd';
+  fs.LongTimeFormat := 'hh:mm:ss.zzzz';
+
+  dt := StrToDateTime(sDateTime, fs);
+  DecodeDate(dt, wYr, wMon, wDay);
+  DecodeTime(dt, wHr, wMin, wSec, wMSec);
+
+  s := FormatFloat('00', wMin) + RightStr(sDateTime, 5);
+//    s := FormatFloat('00', wMin) + FormatFloat('00', wSec) +'.'+ FormatFloat('00', wMSec);
+
+  Result := s;
+end;
+
+end.
+

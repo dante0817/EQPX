@@ -1,0 +1,199 @@
+unit Utils;
+
+interface
+
+uses
+  Windows, Dialogs, FireDAC.Comp.Client, FireDAC.Stan.Def, FireDAC.Stan.Param, StrUtils, SysUtils;
+
+function ExtractDateTime(sDateTime : string) : string;
+procedure ExecProgram(ProgramName: String; sWait: String; Visibility: Integer);
+
+procedure CountUsed_PS;
+function CountGreaterEqualOne(P_S: Char) : integer;
+
+procedure MainReplot;
+
+implementation
+
+uses EQPX_1;
+
+function ExtractDateTime(sDateTime : string) : string;
+var
+  wX, wYr, wMon, wDay, wHr, wMin, wSec, wMSec : Word;
+  s, x : string;
+  dt: TDateTime;
+  fs: TFormatSettings;
+begin
+  fs := TFormatSettings.Create;
+  fs.DateSeparator := '-';
+
+  fs.ShortDateFormat := 'yyyy-MM-dd';
+  fs.LongTimeFormat := 'hh:mm:ss.zzzz';
+
+  dt := StrToDateTime(sDateTime, fs);
+  DecodeDate(dt, wYr, wMon, wDay);
+  DecodeTime(dt, wHr, wMin, wSec, wMSec);
+
+  s := FormatFloat('00', wMin) + RightStr(sDateTime, 5);
+//    s := FormatFloat('00', wMin) + FormatFloat('00', wSec) +'.'+ FormatFloat('00', wMSec);
+
+  Result := s;
+end;
+
+procedure ExecProgram(ProgramName: String; sWait: String; Visibility: Integer);
+var
+  StartupInfo: TStartupInfo;
+  ProcInfo: TProcessInformation;
+  CreateOK: Boolean;
+begin
+  // Ensure valid input for ProgramName
+  if ProgramName = '' then
+  begin
+    ShowMessage('Program name cannot be empty.');
+    Exit;
+  end;
+
+  // Initialize StartupInfo and ProcInfo to ensure clean state
+  ZeroMemory(@StartupInfo, SizeOf(TStartupInfo));
+  ZeroMemory(@ProcInfo, SizeOf(TProcessInformation));
+
+  StartupInfo.cb := SizeOf(TStartupInfo);
+  StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
+  StartupInfo.wShowWindow := Visibility;
+
+  // Attempt to create the process
+  CreateOK := CreateProcess(nil, PChar(ProgramName), nil, nil, False,
+              CREATE_NEW_PROCESS_GROUP or NORMAL_PRIORITY_CLASS,
+              nil, nil, StartupInfo, ProcInfo);
+
+  if CreateOK then
+  begin
+    try
+      if sWait = 'WAIT' then
+        WaitForSingleObject(ProcInfo.hProcess, INFINITE);
+    finally
+      // Ensure that handles are closed properly
+      CloseHandle(ProcInfo.hProcess);
+      CloseHandle(ProcInfo.hThread);
+    end;
+  end
+  else
+  begin
+    ShowMessage('Unable to run ' + ProgramName);
+  end;
+end;
+
+procedure CountUsed_PS;
+var
+  i, ctr, cntP, cntS : Integer;
+  totP, totS: Integer;
+begin
+  cntP := 0;
+  cntS := 0;
+  totS := 0;
+
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+  begin
+    if frmMain.sgMainData.Cells[0, i] = '' then break;
+
+    if frmMain.sgMainData.Cells[3, i] = '*' then
+      Inc(cntP);
+    if frmMain.sgMainData.Cells[6, i] = '*' then
+      Inc(cntS);
+  end;
+  totP := StrToInt(frmMain.edtTotal_P.Text);
+
+  for i := 1 to frmMain.sgMainData.RowCount - 1 do
+    if frmMain.sgMainData.Cells[3, i] <> '' then
+      Inc(totS);
+
+  totS := StrToInt(frmMain.edtTotal_S.Text);
+
+  frmMain.edtUsed_P.Text := IntToStr(totP- cntP);
+  frmMain.edtUsed_S.Text := IntToStr(totS- cntS);
+end;
+
+function CountGreaterEqualOne(P_S: Char) : integer;
+var
+  i, countGreaterEqualOne, columnValue, columnMarker, countColumn: Integer;
+  currentValue: Double;
+  ctr: Integer;
+begin
+  // Assign column numbers based on the data type.
+  if P_S = 'P' then
+  begin
+    columnValue := 2;
+    columnMarker := 3;
+//    countColumn := 5;
+  end
+  else // Assume 'S'
+  begin
+    columnValue := 5;
+    columnMarker := 6;
+//    countColumn := 6;
+  end;
+  // Initialize the count as 0.
+  countGreaterEqualOne := 0;
+  // Get the row count and iterate through the rows of the grid.
+  ctr := frmMain.sgMainData.RowCount;
+  for i := 1 to ctr - 1 do
+  begin
+    // Break the loop if the current cell in column 0 is empty.
+    if (frmMain.sgMainData.Cells[0, i]  = '') then break;
+    // Continue to the next iteration if the current cell in the marker column has an asterisk.
+    if (frmMain.sgMainData.Cells[columnMarker, i]  = '*') then continue;
+    // Get the absolute value of the current cell in the value column.
+    currentValue := Abs(StrToFloatDef(frmMain.sgMainData.Cells[columnValue, i], 0));
+    // Check if the current value is greater than or equal to 1.0, and increment the count if it is.
+    if currentValue >= 1.0 then
+      Inc(countGreaterEqualOne);
+  end;
+  // Assign the count of values greater than or equal to 1.0 to the count column.
+
+  Result := countGreaterEqualOne;
+end;
+
+procedure MainReplot;
+var
+  Counter: Integer;
+  x : boolean;
+begin
+  while ErrorFix.CheckValuesAndAddAsterisk_S(10.0) do
+    frmMain.Plot_againClick(nil);
+
+//  if ErrorFix.CheckValuesAndAddAsterisk_P(10.0) then
+//    frmMain.Plot_againClick(nil);
+
+//------------------
+  while ErrorFix.CheckValuesAndAddAsterisk_S(5.0) do
+     frmMain.Plot_againClick(nil);
+
+  if ErrorFix.CheckValuesAndAddAsterisk_P(5.0) then
+    frmMain.Plot_againClick(nil);
+//------------------
+//exit;
+
+  while ErrorFix.CheckValuesAndAddAsterisk_S(4.0) do
+    frmMain.Plot_againClick(nil);
+
+//  if ErrorFix.CheckValuesAndAddAsterisk_P(4.0) then
+//    frmMain.Plot_againClick(nil);
+
+//------------------
+  while ErrorFix.CheckValuesAndAddAsterisk_S(3.0) do
+    frmMain.Plot_againClick(nil);
+
+  if ErrorFix.CheckValuesAndAddAsterisk_P(3.0) then
+    frmMain.Plot_againClick(nil);
+
+//----------------------
+  while ErrorFix.CheckValuesAndAddAsterisk_S(2.0) do
+    frmMain.Plot_againClick(nil);
+
+//  if ErrorFix.CheckValuesAndAddAsterisk_P(2.0) then
+//    frmMain.Plot_againClick(nil);
+
+end;
+
+end.
+

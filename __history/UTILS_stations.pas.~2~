@@ -1,0 +1,64 @@
+unit UTILS_stations;
+
+interface
+
+uses
+  FireDAC.Comp.Client, Vcl.Grids;
+
+procedure LoadStationsToGrid(sgSOEPD_stations: TStringGrid; const DBPath: string);
+
+implementation
+
+procedure LoadStationsToGrid(sgSOEPD_stations: TStringGrid; const DBPath: string);
+var
+  FDConnection: TFDConnection;
+  FDQuery: TFDQuery;
+  i, j: Integer;
+begin
+  // Initialize connection to SQLite DB
+  FDConnection := TFDConnection.Create(nil);
+  try
+    FDConnection.DriverName := 'SQLite';
+    FDConnection.Params.Database := DBPath; // Set the database path dynamically
+    FDConnection.LoginPrompt := False;
+    FDConnection.Connected := True;
+
+    // Create query to select all data from stations
+    FDQuery := TFDQuery.Create(nil);
+    try
+      FDQuery.Connection := FDConnection;
+      FDQuery.SQL.Text := 'SELECT * FROM stations';
+      FDQuery.Open;
+
+      // Set up StringGrid column headers
+      sgSOEPD_stations.RowCount := FDQuery.RecordCount + 1; // +1 for header
+      sgSOEPD_stations.ColCount := FDQuery.FieldCount;
+
+      for i := 0 to FDQuery.FieldCount - 1 do
+      begin
+        sgSOEPD_stations.Cells[i, 0] := FDQuery.Fields[i].FieldName; // Header
+      end;
+
+      // Populate StringGrid with data
+      i := 1; // Start at row 1 since row 0 is header
+      while not FDQuery.Eof do
+      begin
+        for j := 0 to FDQuery.FieldCount - 1 do
+        begin
+          sgSOEPD_stations.Cells[j, i] := FDQuery.Fields[j].AsString;
+        end;
+        Inc(i);
+        FDQuery.Next;
+      end;
+
+    finally
+      FDQuery.Free;
+    end;
+
+  finally
+    FDConnection.Free;
+  end;
+end;
+
+end.
+

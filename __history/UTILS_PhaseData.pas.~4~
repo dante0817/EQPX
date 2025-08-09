@@ -1,0 +1,208 @@
+unit UTILS_PhaseData;
+
+interface
+
+uses
+  ComObj, Dialogs, SysUtils, DateUtils, Variants, Vcl.Grids,
+  IOUtils, StrUtils;
+
+procedure ExtractDataToGrid(Worksheet: OleVariant; StringGrid: TStringGrid; EQDate: TDateTime);
+
+procedure OpenEQWorksheet(const ProgramPath: string; EQDate: TDateTime);
+
+
+implementation
+
+const
+  xlUp = -4162;  // Define the Excel constant for xlUp
+
+procedure ExtractDataToGrid(Worksheet: OleVariant; StringGrid: TStringGrid; EQDate: TDateTime);
+var
+  Row, LastRow, Col: Integer;
+  CellValue: Variant;
+  WorksheetDate: TDateTime;
+  DateString: string;
+begin
+  // Extract the date from the first cell (assuming the date is in cell A1 or [1,1])
+  DateString := Worksheet.Cells[1, 1].Text;
+
+  // Try to convert the date string from the worksheet to TDateTime
+  try
+    WorksheetDate := StrToDate(DateString);
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Error reading date from the worksheet: ' + E.Message);
+      Exit;
+    end;
+  end;
+
+  // Compare the extracted worksheet date with the date we are processing (EQDate)
+  if WorksheetDate <> EQDate then
+  begin
+    ShowMessage('The date in the worksheet (' + DateToStr(WorksheetDate) + ') does not match the date being processed (' + DateToStr(EQDate) + ').');
+    Exit;
+  end;
+
+  // If the dates match, proceed with data extraction
+
+  // Define where the data starts (assuming headers are in row 4 and data starts at row 5)
+  Row := 5;
+
+  // Clear the TStringGrid
+  StringGrid.RowCount := 1;
+  StringGrid.ColCount := 9;
+
+  // Set up headers in TStringGrid
+  StringGrid.Cells[0, 0] := 'Station';
+  StringGrid.Cells[1, 0] := 'P Polarity';
+  StringGrid.Cells[2, 0] := 'P Arrival';
+  StringGrid.Cells[3, 0] := 'S Polarity';
+  StringGrid.Cells[4, 0] := 'S Arrival';
+  StringGrid.Cells[5, 0] := 'Amplitude';
+  StringGrid.Cells[6, 0] := 'Time Duration';
+  StringGrid.Cells[7, 0] := 'Type';
+  StringGrid.Cells[8, 0] := 'Freq';
+
+  // Find the last row of data in the worksheet (assumes there are no empty rows between data)
+  LastRow := Worksheet.Cells[Worksheet.Rows.Count, 1].End(xlUp).Row;
+
+  // Loop through the rows in the worksheet and extract the data
+  while Row <= LastRow do
+  begin
+    // Increase the row count in the TStringGrid for each new row of data
+    StringGrid.RowCount := StringGrid.RowCount + 1;
+
+    // Extract data from each column
+    StringGrid.Cells[0, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 1].Text;  // Station
+    StringGrid.Cells[1, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 2].Text;  // P Polarity
+    StringGrid.Cells[2, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 6].Text;  // P Arrival
+    StringGrid.Cells[3, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 4].Text;  // S Polarity
+    StringGrid.Cells[4, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 8].Text;  // S Arrival
+    StringGrid.Cells[5, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 10].Text; // Amplitude
+    StringGrid.Cells[6, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 11].Text; // Time Duration
+    StringGrid.Cells[7, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 12].Text; // Type
+    StringGrid.Cells[8, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 13].Text; // Freq
+
+    // Move to the next row
+    Inc(Row);
+  end;
+end;
+
+function ParseCustomDate(DateStr: string): TDateTime;
+var
+  YearStr, MonthStr, DayStr: string;
+  Year, Day: Word;
+  Month: Word;
+begin
+  // Split the date string (e.g., '2020 January 02') into year, month, and day
+  YearStr := Copy(DateStr, 1, 4);      // First 4 characters are the year
+  MonthStr := Copy(DateStr, 6, Length(DateStr) - 8);  // Extract the month part
+  DayStr := Copy(DateStr, Length(DateStr) - 1, 2);    // Last 2 characters are the day
+
+  // Convert the year and day to integers
+  Year := StrToInt(YearStr);
+  Day := StrToInt(DayStr);
+
+  // Convert the month string to the corresponding month number
+  Month := IndexText(MonthStr, ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']) + 1;
+
+  if Month = 0 then
+    raise Exception.Create('Invalid month: ' + MonthStr);
+
+  // Create the TDateTime using EncodeDate
+  Result := EncodeDate(Year, Month, Day);
+end;
+
+procedure OpenEQWorksheet(const ProgramPath: string; EQDate: TDateTime);
+var
+  ExcelApp, Workbook, Worksheet: OleVariant;
+  FilePath, FolderPath, WorksheetName, SearchPattern, WorksheetDateStr: string;
+  Year, Month, Day: Word;
+  SearchRec: TSearchRec;
+  Found: Boolean;
+  ExtractedDate: TDateTime;
+begin
+  try
+    // Get the year, month, and day from the target date
+    DecodeDate(EQDate, Year, Month, Day);
+
+    // Construct the folder path using the year
+    FolderPath := IncludeTrailingPathDelimiter(ProgramPath) + 'DB\PHASEDATA\' + IntToStr(Year);
+
+    // Search for Excel files that start with "yyyy_mm" format and end with ".xlsx"
+    SearchPattern := FormatDateTime('yyyy_mm', EQDate) + '*.xlsx';  // Wildcard to find the file
+
+    // Initialize found flag
+    Found := False;
+
+    // Use FindFirst to search for files that match the pattern in the folder
+    if FindFirst(IncludeTrailingPathDelimiter(FolderPath) + SearchPattern, faAnyFile, SearchRec) = 0 then
+    begin
+      try
+        // Set the file path to the first match found
+        FilePath := IncludeTrailingPathDelimiter(FolderPath) + SearchRec.Name;
+        Found := True;
+      finally
+        FindClose(SearchRec);
+      end;
+    end;
+
+    // Check if we found the file
+    if not Found then
+    begin
+      ShowMessage('No matching file found for pattern: ' + SearchPattern);
+      Exit;
+    end;
+
+    // Format the worksheet name based on the day of the month (e.g., Jan02)
+    WorksheetName := FormatDateTime('mmmdd', EQDate);  // 'mmmdd' gives the format like 'Jan02'
+
+    // Start Excel application
+    ExcelApp := CreateOleObject('Excel.Application');
+    ExcelApp.Visible := True;  // Optional: Make Excel visible
+
+    // Open the workbook
+    Workbook := ExcelApp.Workbooks.Open(FilePath);
+
+    // Try to select the worksheet based on the name
+    try
+      Worksheet := Workbook.Worksheets[WorksheetName];
+      Worksheet.Activate;
+
+      // Extract the first row (date) from the worksheet
+      WorksheetDateStr := Worksheet.Cells[1, 1].Value;  // The date is in cell A1
+
+      // Convert the extracted date string to a TDateTime value using ParseCustomDate
+      ExtractedDate := ParseCustomDate(WorksheetDateStr);
+
+      // Compare the extracted date with the target date
+      if ExtractedDate <> EQDate then
+      begin
+        ShowMessage('The worksheet date (' + WorksheetDateStr + ') does not match the target date.');
+        Workbook.Close(False);  // Close the workbook without saving
+        ExcelApp.Quit;
+        Exit;
+      end;
+
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Worksheet or data extraction error: ' + E.Message);
+        Workbook.Close(False);  // Close the workbook without saving
+        ExcelApp.Quit;
+        Exit;
+      end;
+    end;
+
+    // Now the worksheet is open, you can proceed to process the data in the worksheet
+
+  finally
+    // Cleanup Excel references
+    Workbook := VarNull;  // Correct way to reset OleVariant
+    ExcelApp := VarNull;  // Correct way to reset OleVariant
+  end;
+end;
+
+end.
+

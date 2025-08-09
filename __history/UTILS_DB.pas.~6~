@@ -1,0 +1,85 @@
+unit UTILS_DB;
+
+interface
+
+uses
+  Grids, System.SysUtils, System.Classes, Data.DB, Data.SqlExpr, FireDAC.Comp.Client, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys.SQLite, FireDAC.DApt, FireDAC.Stan.ExprFuncs;
+
+  procedure BrowseEarthquakeData(const Year, Month, Day: Integer; Grid: TStringGrid; ProgramPath: string; MaxMagnitude: Double);
+
+implementation
+
+uses EQPX_1;
+
+procedure BrowseEarthquakeData(const Year, Month, Day: Integer; Grid: TStringGrid; ProgramPath: string; MaxMagnitude: Double);
+var
+  FDConnection: TFDConnection;
+  FDQuery: TFDQuery;
+  SQLQuery: string;
+  DateFilter: string;
+  DatabasePath: string;
+  RowIndex: Integer;
+  DateTimeValue: string;
+  DatePart, TimePart: string;
+  Magnitude: Double;
+begin
+  FDConnection := TFDConnection.Create(nil);
+  FDQuery := TFDQuery.Create(nil);
+  try
+    // Construct the database path using the provided ProgramPath
+    DatabasePath := ProgramPath + 'DB\EQCatalogue_web.sdb';
+
+    // Setup SQLite connection
+    FDConnection.DriverName := 'SQLite';
+    FDConnection.Params.Database := DatabasePath;
+    FDConnection.LoginPrompt := False;
+    FDConnection.Connected := True;
+
+    FDQuery.Connection := FDConnection;
+
+    // Format date filter
+    DateFilter := Format('%.4d-%.2d-%.2d', [Year, Month, Day]);
+
+    // SQL Query to filter data by date and magnitude
+    SQLQuery := 'SELECT datetime, ms FROM EarthquakeData WHERE datetime LIKE :DateFilter AND ms < :MaxMagnitude';
+
+    FDQuery.SQL.Text := SQLQuery;
+    FDQuery.ParamByName('DateFilter').AsString := DateFilter + '%';
+    FDQuery.ParamByName('MaxMagnitude').AsFloat := MaxMagnitude;
+
+    // Execute the query
+    FDQuery.Open;
+
+    // Start populating the grid
+    RowIndex := 1; // Start at row 1, as row 0 is the header
+
+    while not FDQuery.Eof do
+    begin
+      // Retrieve the datetime field as a string
+      DateTimeValue := FDQuery.FieldByName('datetime').AsString;
+
+      // Retrieve the magnitude
+      Magnitude := FDQuery.FieldByName('ms').AsFloat;
+
+      // Split the datetime string into date and time parts
+      DatePart := Copy(DateTimeValue, 1, 10);  // Extracts the 'YYYY-MM-DD' part
+      TimePart := Copy(DateTimeValue, 12, 8);  // Extracts the 'HH:NN:SS' part
+
+      // Add a new row for each record
+      Grid.RowCount := Grid.RowCount + 1;
+      Grid.Cells[0, RowIndex] := DatePart;
+      Grid.Cells[1, RowIndex] := TimePart;
+      Grid.Cells[2, RowIndex] := FormatFloat('0.0', Magnitude); // Format magnitude as a string
+
+      // Move to the next record
+      Inc(RowIndex);
+      FDQuery.Next;
+    end;
+
+  finally
+    FDQuery.Free;
+    FDConnection.Free;
+  end;
+end;
+
+end.

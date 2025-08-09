@@ -1,0 +1,43 @@
+unit UTILS_CombineData;
+
+interface
+
+uses
+  Vcl.Grids, SysUtils, StrUtils, Vcl.StdCtrls, Classes;
+
+procedure SortAtlasDataByPTime(Grid: TStringGrid);
+
+implementation
+
+uses EQPX_1;
+
+procedure SortAtlasDataByPTime(Grid: TStringGrid);
+var
+  i, j: Integer;
+  tempRow: TStringList;
+begin
+  // Create a temporary TStringList to hold row values during swapping
+  tempRow := TStringList.Create;
+  try
+    // Use a simple bubble sort algorithm to sort by P Time (ascending order)
+    for i := 1 to Grid.RowCount - 2 do
+    begin
+      for j := i + 1 to Grid.RowCount - 1 do
+      begin
+        // Compare P Time values between row i and row j
+        if Grid.Cells[4, i] > Grid.Cells[4, j] then
+        begin
+          // Swap rows i and j
+          tempRow.Assign(Grid.Rows[i]);
+          Grid.Rows[i].Assign(Grid.Rows[j]);
+          Grid.Rows[j].Assign(tempRow);
+        end;
+      end;
+    end;
+  finally
+    tempRow.Free;
+  end;
+end;
+
+end.
+

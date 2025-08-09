@@ -1,0 +1,193 @@
+﻿unit UTILS_Brute_Force;
+
+interface
+
+uses
+  System.Threading,
+  System.SyncObjs,
+  Math, Dialogs, System.SysUtils, System.Classes, EQPX_1, System.Diagnostics;
+
+type
+  TPhaseInfo = record
+    Row: Integer;
+    MarkerCol: Integer;  // 3 for P, 6 for S in sgMainData
+    IsP: Boolean;
+  end;
+
+var
+  PhaseList: array of TPhaseInfo;
+
+procedure BuildPhaseList;
+function MaskIsValid(mask: Cardinal): Boolean;
+procedure ApplyMask(mask: Cardinal);
+procedure BruteForceSearch;
+
+implementation
+
+{-------------------------------------------------------------------------------
+  BuildPhaseList:
+  - Include a P‐pick if col1 is nonblank.
+  - Include an S‐pick *only if* col4 is nonblank AND col1 (the P) is also nonblank.
+-------------------------------------------------------------------------------}
+procedure BuildPhaseList;
+var
+  r, idx: Integer;
+  pi: TPhaseInfo;
+begin
+  PhaseList := nil;
+  with frmMain.sgMainData do
+    for r := 1 to RowCount - 1 do
+    begin
+      if Trim(Cells[0, r]) = '' then
+        Break;
+
+      // only include P if there's no '*' already in col 3
+      if (Trim(Cells[1, r]) <> '') and (Cells[3, r] <> '*') then
+      begin
+        pi.Row       := r;
+        pi.MarkerCol := 3;
+        pi.IsP       := True;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+
+      // only include S if P was present AND no '*' in col 6
+      if (Trim(Cells[4, r]) <> '')
+      and (Trim(Cells[1, r]) <> '')
+      and (Cells[6, r] <> '*') then
+      begin
+        pi.Row       := r;
+        pi.MarkerCol := 6;
+        pi.IsP       := False;
+        idx := Length(PhaseList);
+        SetLength(PhaseList, idx + 1);
+        PhaseList[idx] := pi;
+      end;
+    end;
+end;
+{-------------------------------------------------------------------------------
+  MaskIsValid:
+  - Require ≥3 P picks and ≥1 S pick.
+  - For every S‐bit set, the corresponding P‐bit (same Row) must also be set.
+-------------------------------------------------------------------------------}
+function MaskIsValid(mask: Cardinal): Boolean;
+var
+  i, cntP, cntS, j: Integer;
+begin
+  cntP := 0; cntS := 0;
+
+  // count P and S bits
+  for i := 0 to High(PhaseList) do
+    if (mask and (1 shl i)) <> 0 then
+      if PhaseList[i].IsP then
+        Inc(cntP)
+      else
+        Inc(cntS);
+
+  // enforce S‐only rule
+  for i := 0 to High(PhaseList) do
+    if (not PhaseList[i].IsP)            // this is an S-entry
+    and ((mask and (1 shl i)) <> 0)      // included
+    then
+    begin
+      // find its P counterpart
+      for j := 0 to High(PhaseList) do
+        if PhaseList[j].IsP
+        and (PhaseList[j].Row = PhaseList[i].Row)
+        and ((mask and (1 shl j)) = 0)   // P not included
+        then
+          Exit(False);
+    end;
+
+  // final P/S counts (3 and 1 hard-coded, or read from your UI)
+  Result := (cntP >= StrToIntDef(frmMain.ledMinimum_P.Text, 3))
+         and (cntS >= StrToIntDef(frmMain.ledMinimum_S.Text, 1));
+end;
+
+{-------------------------------------------------------------------------------
+  ApplyMask:
+  Clears old asterisks, then marks any bit=0 pick with '*'.
+-------------------------------------------------------------------------------}
+procedure ApplyMask(mask: Cardinal);
+var
+  i: Integer;
+begin
+  with frmMain.sgMainData do
+    for i := 1 to RowCount - 1 do
+    begin
+      Cells[3, i] := '';  // clear P-marker
+      Cells[6, i] := '';  // clear S-marker
+    end;
+
+  for i := 0 to High(PhaseList) do
+    if (mask and (1 shl i)) = 0 then
+      frmMain.sgMainData.Cells[ PhaseList[i].MarkerCol,
+                                 PhaseList[i].Row ] := '*';
+end;
+
+{-------------------------------------------------------------------------------
+  BruteForceSearch:
+  - Builds phase list, iterates every mask, runs plotter, parses RMS,
+    remembers bestMask, then reapplies it for final output.
+-------------------------------------------------------------------------------}
+procedure BruteForceSearch;
+var
+  mask, maxMask: Cardinal;
+  bestMask: Cardinal;
+  bestRMS, currRMS: Double;
+  sw: TStopwatch; // Add this line
+  elapsed: Double;
+begin
+  frmMain.EQP_dataClick(nil);
+  frmMain.PlotClick(nil);
+  frmMain.RePlotClick(nil);
+
+  sw := TStopwatch.StartNew; // Start timing
+
+  BuildPhaseList;
+  if Length(PhaseList) = 0 then
+    raise Exception.Create('No valid P/S picks found');
+
+  bestRMS := MaxDouble;
+  maxMask := (1 shl Length(PhaseList)) - 1;
+
+  for mask := 1 to maxMask do
+    if MaskIsValid(mask) then
+    begin
+      ApplyMask(mask);
+      // run your existing click‐sequence:
+      frmMain.PLOT_DATClick(nil);
+      frmMain.PHILSTA_DATClick(nil);
+      frmMain.PLOT_eqClick(nil);
+
+      frmMain.ExtractResult_headingClick(nil);
+      frmMain.Update_res_PSClick(nil);
+      frmMain.Used_P_SClick(nil);
+
+      currRMS := StrToFloatDef(frmMain.ledRMS.Text, MaxDouble);
+      if currRMS < bestRMS then
+      begin
+        bestRMS := currRMS;
+        bestMask := mask;
+      end;
+    end;
+
+  // final apply of the optimal subset
+  ApplyMask(bestMask);
+  frmMain.PLOT_DATClick(nil);
+  frmMain.PHILSTA_DATClick(nil);
+  frmMain.PLOT_eqClick(nil);
+  frmMain.ExtractResult_headingClick(nil);
+  frmMain.Update_res_PSClick(nil);
+  frmMain.Used_P_SClick(nil);
+
+  sw.Stop; // Stop timing
+  elapsed := sw.ElapsedMilliseconds / 1000; // seconds with decimals
+
+  ShowMessage(
+    Format('Brute-force complete. Best RMS = %.3f'#13#10'Elapsed time: %.2f seconds', [bestRMS, elapsed])
+  );
+end;
+
+end.

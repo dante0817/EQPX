@@ -1,0 +1,185 @@
+unit UTILS_fileIO;
+
+interface
+
+procedure OpenAtlasDataFolder;
+procedure ListAtlasDataFilesInMemo;
+
+procedure ExtractAndSavePhasePData;
+  function ExtractField(const Line: string; FieldIndex: Integer): string;
+
+implementation
+
+uses
+  System.SysUtils, Vcl.Dialogs, Winapi.ShellAPI, Winapi.Windows, EQPX_1,
+  System.Classes, System.IOUtils;
+
+procedure OpenAtlasDataFolder;
+var
+  FirstRowDate: string;
+  Year, Month, Day: string;
+  FolderPath: string;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Check if the folder exists
+    if DirectoryExists(FolderPath) then
+    begin
+      // Open the folder in Windows Explorer
+      ShellExecute(0, 'open', PChar(FolderPath), nil, nil, SW_SHOWNORMAL);
+    end
+    else
+    begin
+      ShowMessage('Folder does not exist: ' + FolderPath);
+    end;
+  end;
+end;
+
+
+procedure ListAtlasDataFilesInMemo;
+var
+  FirstRowDate: string;
+  Year, Month, Day: string;
+  FolderPath: string;
+  FilesList: TStringList;
+  i: Integer;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming the date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Create a TStringList to hold the list of files
+    FilesList := TStringList.Create;
+    try
+      // List all files in the directory
+      FilesList.AddStrings(TDirectory.GetFiles(FolderPath, '*.*', TSearchOption.soTopDirectoryOnly));
+
+      // Clear the memo before adding new content
+      mmoTemp.Clear;
+
+      // Add the list of files to the memo
+      for i := 0 to FilesList.Count - 1 do
+      begin
+        mmoTemp.Lines.Add(FilesList[i]);
+      end;
+    finally
+      FilesList.Free;
+    end;
+  end;
+end;
+
+//------------------------------
+procedure ExtractAndSavePhasePData;
+var
+  FirstRowDate, Year, Month, Day, FolderPath: string;
+  FilesList, FileLines: TStringList;
+  i, j, RowIndex: Integer;
+  Line, DateTimeValue: string;
+begin
+  with frmMain do
+  begin
+    // Access the first row date (assuming the date is in the first column)
+    FirstRowDate := sgEQ_events.Cells[0, 1];  // e.g., '2020-01-02'
+
+    // Extract the year, month, and day from the date
+    Year := Copy(FirstRowDate, 1, 4);   // '2020'
+    Month := Copy(FirstRowDate, 6, 2);  // '01'
+    Day := Copy(FirstRowDate, 9, 2);    // '02'
+
+    // Construct the folder path using the base path from lblProgramPath
+    FolderPath := IncludeTrailingPathDelimiter(lblProgramPath.Caption) +
+                  'DB\ATLASDATA\' + Year + '\' + Month + '\' + Year + Month + Day;
+
+    // Create a TStringList to hold the list of files
+    FilesList := TStringList.Create;
+    try
+      // List all files in the directory
+      FilesList.AddStrings(TDirectory.GetFiles(FolderPath, '*.*', TSearchOption.soTopDirectoryOnly));
+
+      // Initialize the TStringGrid sgAtlas_data
+      sgAtlas_data.RowCount := 1; // Start with only the header row
+      sgAtlas_data.ColCount := 3; // Columns: Data Type, Date/Time, File Name
+      sgAtlas_data.Cells[0, 0] := 'Data Type';
+      sgAtlas_data.Cells[1, 0] := 'Date/Time';
+      sgAtlas_data.Cells[2, 0] := 'File Name';
+
+      RowIndex := 1;
+
+      // Process each file
+      for i := 0 to FilesList.Count - 1 do
+      begin
+        FileLines := TStringList.Create;
+        try
+          // Load the file contents into FileLines
+          FileLines.LoadFromFile(FilesList[i]);
+
+          // Process each line in the file
+          for j := 0 to FileLines.Count - 1 do
+          begin
+            Line := Trim(FileLines[j]);
+
+            // Check for 'phase' lines with 'P' as the phase type
+            if Line.StartsWith('phase') and (ExtractField(Line, 6) = 'P') then
+            begin
+              // Extract the date/time (7th field in 'phase' lines)
+              DateTimeValue := Trim(ExtractField(Line, 7));
+
+              // Add the extracted data to sgAtlas_data
+              sgAtlas_data.RowCount := sgAtlas_data.RowCount + 1;
+              sgAtlas_data.Cells[0, RowIndex] := 'phase P';
+              sgAtlas_data.Cells[1, RowIndex] := DateTimeValue;
+              sgAtlas_data.Cells[2, RowIndex] := ExtractFileName(FilesList[i]);
+
+              Inc(RowIndex);
+            end;
+          end;
+        finally
+          FileLines.Free;
+        end;
+      end;
+
+    finally
+      FilesList.Free;
+    end;
+  end;
+end;
+
+function ExtractField(const Line: string; FieldIndex: Integer): string;
+var
+  Fields: TStringList;
+begin
+  Fields := TStringList.Create;
+  try
+    Fields.CommaText := Line;
+    if (FieldIndex > 0) and (FieldIndex <= Fields.Count) then
+      Result := Fields[FieldIndex - 1]
+    else
+      Result := '';
+  finally
+    Fields.Free;
+  end;
+end;
+
+end.

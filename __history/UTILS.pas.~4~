@@ -1,0 +1,80 @@
+unit Utils;
+
+interface
+
+uses
+  Windows, Dialogs, FireDAC.Comp.Client, FireDAC.Stan.Def, FireDAC.Stan.Param, StrUtils, SysUtils;
+
+function ExtractDateTime(sDateTime : string) : string;
+procedure ExecProgram(ProgramName: String; sWait: String; Visibility: Integer);
+
+implementation
+
+function ExtractDateTime(sDateTime : string) : string;
+var
+  wX, wYr, wMon, wDay, wHr, wMin, wSec, wMSec : Word;
+  s, x : string;
+  dt: TDateTime;
+  fs: TFormatSettings;
+begin
+  fs := TFormatSettings.Create;
+  fs.DateSeparator := '-';
+
+  fs.ShortDateFormat := 'yyyy-MM-dd';
+  fs.LongTimeFormat := 'hh:mm:ss.zzzz';
+
+  dt := StrToDateTime(sDateTime, fs);
+  DecodeDate(dt, wYr, wMon, wDay);
+  DecodeTime(dt, wHr, wMin, wSec, wMSec);
+
+  s := FormatFloat('00', wMin) + RightStr(sDateTime, 5);
+//    s := FormatFloat('00', wMin) + FormatFloat('00', wSec) +'.'+ FormatFloat('00', wMSec);
+
+  Result := s;
+end;
+
+procedure ExecProgram(ProgramName: String; sWait: String; Visibility: Integer);
+var
+  StartupInfo: TStartupInfo;
+  ProcInfo: TProcessInformation;
+  CreateOK: Boolean;
+begin
+  // Ensure valid input for ProgramName
+  if ProgramName = '' then
+  begin
+    ShowMessage('Program name cannot be empty.');
+    Exit;
+  end;
+
+  // Initialize StartupInfo and ProcInfo to ensure clean state
+  ZeroMemory(@StartupInfo, SizeOf(TStartupInfo));
+  ZeroMemory(@ProcInfo, SizeOf(TProcessInformation));
+
+  StartupInfo.cb := SizeOf(TStartupInfo);
+  StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
+  StartupInfo.wShowWindow := Visibility;
+
+  // Attempt to create the process
+  CreateOK := CreateProcess(nil, PChar(ProgramName), nil, nil, False,
+              CREATE_NEW_PROCESS_GROUP or NORMAL_PRIORITY_CLASS,
+              nil, nil, StartupInfo, ProcInfo);
+
+  if CreateOK then
+  begin
+    try
+      if sWait = 'WAIT' then
+        WaitForSingleObject(ProcInfo.hProcess, INFINITE);
+    finally
+      // Ensure that handles are closed properly
+      CloseHandle(ProcInfo.hProcess);
+      CloseHandle(ProcInfo.hThread);
+    end;
+  end
+  else
+  begin
+    ShowMessage('Unable to run ' + ProgramName);
+  end;
+end;
+
+end.
+

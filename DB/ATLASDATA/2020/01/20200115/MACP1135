@@ -1,0 +1,23 @@
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592
+# phase, network, station, channel, location, phase, time, first motion, onset, weight code, user, earliest time, latest time
+phase,PV,MACP,BHN,,P,2020-01-15 00:10:29.8630,U,I,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 00:10:36.7630,,I,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 00:19:47.5690,D,E,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 01:20:48.9620,D,E,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 01:20:55.4689,D,E,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 02:01:12.9266,D,E,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 03:41:39.1396,U,I,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 03:42:33.7306,U,I,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 04:39:48.6217,U,I,0,MPL,,
+phase,PV,MACP,BHE,,S,2020-01-15 04:39:55.4940,D,E,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 07:07:22.7014,U,I,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 07:07:28.7911,U,I,0,MPL,,
+phase,PV,MACP,BHE,,P,2020-01-15 07:15:40.2288,,I,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 07:15:45.6733,U,I,0,MPL,,
+phase,PV,MACP,BHN,,S,2020-01-15 07:15:45.0274,,,0,MPL,,
+phase,PV,MACP,BHN,,P,2020-01-15 11:35:07.6965,D,E,0,MPL,,
+# coda, network, station, channel, location, time, weight code
+coda,PV,MACP,BHN,,2020-01-15 11:41:05.5647,0
+# amp, network, station, channel, location, time first amplitude, first amplitude, time second amplitude, second amplitude, mean amplitude, weight code
+amp,PV,MACP,BHN,,2020-01-15 00:10:38.0800,-18028,2020-01-15 11:35:24.0000,25335,-507.4611,0
+#created by 'PHIVOLCS' with Atlas version 2.3.6 S/N: 592

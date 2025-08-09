@@ -1,0 +1,396 @@
+unit UTILS_PhaseData;
+
+interface
+
+uses
+  ComObj, Dialogs, SysUtils, DateUtils, Variants, Vcl.Grids,
+  IOUtils, StrUtils, Classes;
+
+procedure ExtractDataToGrid(Worksheet: OleVariant; StringGrid: TStringGrid; EQDate: TDateTime);
+
+procedure OpenEQWorksheet(const ProgramPath: string; EQDate: TDateTime);
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+
+implementation
+
+uses EQPX_1;
+
+const
+  xlUp = -4162;  // Define the Excel constant for xlUp
+
+procedure ExtractDataToGrid(Worksheet: OleVariant; StringGrid: TStringGrid; EQDate: TDateTime);
+var
+  Row, LastRow, Col: Integer;
+  CellValue: Variant;
+  WorksheetDate: TDateTime;
+  DateString: string;
+begin
+  // Extract the date from the first cell (assuming the date is in cell A1 or [1,1])
+  DateString := Worksheet.Cells[1, 1].Text;
+
+  // Try to convert the date string from the worksheet to TDateTime
+  try
+    WorksheetDate := StrToDate(DateString);
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Error reading date from the worksheet: ' + E.Message);
+      Exit;
+    end;
+  end;
+
+  // Compare the extracted worksheet date with the date we are processing (EQDate)
+  if WorksheetDate <> EQDate then
+  begin
+    ShowMessage('The date in the worksheet (' + DateToStr(WorksheetDate) + ') does not match the date being processed (' + DateToStr(EQDate) + ').');
+    Exit;
+  end;
+
+  // If the dates match, proceed with data extraction
+
+  // Define where the data starts (assuming headers are in row 4 and data starts at row 5)
+  Row := 5;
+
+  // Clear the TStringGrid
+  StringGrid.RowCount := 1;
+  StringGrid.ColCount := 9;
+
+  // Set up headers in TStringGrid
+  StringGrid.Cells[0, 0] := 'Station';
+  StringGrid.Cells[1, 0] := 'P Polarity';
+  StringGrid.Cells[2, 0] := 'P Arrival';
+  StringGrid.Cells[3, 0] := 'S Polarity';
+  StringGrid.Cells[4, 0] := 'S Arrival';
+  StringGrid.Cells[5, 0] := 'Amplitude';
+  StringGrid.Cells[6, 0] := 'Time Duration';
+  StringGrid.Cells[7, 0] := 'Type';
+  StringGrid.Cells[8, 0] := 'Freq';
+
+  // Find the last row of data in the worksheet (assumes there are no empty rows between data)
+  LastRow := Worksheet.Cells[Worksheet.Rows.Count, 1].End(xlUp).Row;
+
+  // Loop through the rows in the worksheet and extract the data
+  while Row <= LastRow do
+  begin
+    // Increase the row count in the TStringGrid for each new row of data
+    StringGrid.RowCount := StringGrid.RowCount + 1;
+
+    // Extract data from each column
+    StringGrid.Cells[0, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 1].Text;  // Station
+    StringGrid.Cells[1, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 2].Text;  // P Polarity
+    StringGrid.Cells[2, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 6].Text;  // P Arrival
+    StringGrid.Cells[3, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 4].Text;  // S Polarity
+    StringGrid.Cells[4, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 8].Text;  // S Arrival
+    StringGrid.Cells[5, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 10].Text; // Amplitude
+    StringGrid.Cells[6, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 11].Text; // Time Duration
+    StringGrid.Cells[7, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 12].Text; // Type
+    StringGrid.Cells[8, StringGrid.RowCount - 1] := Worksheet.Cells[Row, 13].Text; // Freq
+
+    // Move to the next row
+    Inc(Row);
+  end;
+end;
+
+function ParseCustomDate(DateStr: string): TDateTime;
+var
+  YearStr, MonthStr, DayStr: string;
+  Year, Day: Word;
+  Month: Word;
+begin
+  YearStr := Copy(DateStr, 1, 4);      // First 4 characters are the year
+  MonthStr := Copy(DateStr, 6, Length(DateStr) - 8);  // Extract the month part
+  DayStr := Copy(DateStr, Length(DateStr) - 1, 2);    // Last 2 characters are the day
+
+  Year := StrToInt(YearStr);
+  Day := StrToInt(DayStr);
+
+  Month := IndexText(MonthStr, ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']) + 1;
+
+  if Month = 0 then
+    raise Exception.Create('Invalid month: ' + MonthStr);
+
+  Result := EncodeDate(Year, Month, Day);
+end;
+
+procedure SaveWorksheetAsCSV(Worksheet: OleVariant; const CSVFilePath: string);
+begin
+  try
+    // Save the worksheet as a CSV file
+    Worksheet.SaveAs(CSVFilePath, 6);  // File format code 6 = CSV
+  except
+    on E: Exception do
+      ShowMessage('Error saving worksheet as CSV: ' + E.Message);
+  end;
+end;
+
+procedure LoadCSVToStringGrid(const CSVFilePath: string; StringGrid: TStringGrid);
+var
+  CSVFile: TextFile;
+  Line: string;
+  Row, Col: Integer;
+  Cells: TStringList;
+begin
+  AssignFile(CSVFile, CSVFilePath);
+  Reset(CSVFile);
+
+  Cells := TStringList.Create;
+  try
+    Row := 0;
+    StringGrid.RowCount := 0;
+    StringGrid.ColCount := 0;
+
+    // Read CSV file line by line
+    while not Eof(CSVFile) do
+    begin
+      ReadLn(CSVFile, Line);
+      Cells.CommaText := Line;  // Parse the CSV line into individual cells
+
+      // Set the grid's row and column count dynamically
+      if StringGrid.ColCount < Cells.Count then
+        StringGrid.ColCount := Cells.Count;
+      StringGrid.RowCount := StringGrid.RowCount + 1;
+
+      // Copy the data into the TStringGrid
+      for Col := 0 to Cells.Count - 1 do
+      begin
+        StringGrid.Cells[Col, Row] := Cells[Col];
+      end;
+
+      Inc(Row);  // Move to the next row in the TStringGrid
+    end;
+  finally
+    CloseFile(CSVFile);
+    Cells.Free;
+  end;
+end;
+
+procedure OpenEQWorksheet(const ProgramPath: string; EQDate: TDateTime);
+var
+  ExcelApp, Workbook, Worksheet: OleVariant;
+  FilePath, FolderPath, WorksheetName, SearchPattern, WorksheetDateStr, CSVFilePath: string;
+  Year, Month, Day: Word;
+  SearchRec: TSearchRec;
+  Found: Boolean;
+  ExtractedDate: TDateTime;
+begin
+  try
+    DecodeDate(EQDate, Year, Month, Day);
+
+    FolderPath := IncludeTrailingPathDelimiter(ProgramPath) + 'DB\PHASEDATA\' + IntToStr(Year);
+    SearchPattern := FormatDateTime('yyyy_mm', EQDate) + '*.xlsx';  // Wildcard to find the file
+
+    Found := False;
+
+    if FindFirst(IncludeTrailingPathDelimiter(FolderPath) + SearchPattern, faAnyFile, SearchRec) = 0 then
+    begin
+      try
+        FilePath := IncludeTrailingPathDelimiter(FolderPath) + SearchRec.Name;
+        Found := True;
+      finally
+        FindClose(SearchRec);
+      end;
+    end;
+
+    if not Found then
+    begin
+      ShowMessage('No matching file found for pattern: ' + SearchPattern);
+      Exit;
+    end;
+
+    WorksheetName := FormatDateTime('mmmdd', EQDate);  // 'mmmdd' gives the format like 'Jan02'
+    CSVFilePath := IncludeTrailingPathDelimiter(ProgramPath) + 'Temp.csv';  // Temporary CSV file path
+
+    ExcelApp := CreateOleObject('Excel.Application');
+    ExcelApp.Visible := False;  // Optional: Make Excel visible
+    Workbook := ExcelApp.Workbooks.Open(FilePath);
+
+    try
+      Worksheet := Workbook.Worksheets[WorksheetName];
+      Worksheet.Activate;
+
+      // Extract the date from cell A1 and verify
+      WorksheetDateStr := Worksheet.Cells[1, 1].Value;  // Date in A1
+      ExtractedDate := ParseCustomDate(WorksheetDateStr);
+      if ExtractedDate <> EQDate then
+      begin
+        ShowMessage('The worksheet date (' + WorksheetDateStr + ') does not match the target date.');
+        Workbook.Close(False);  // Close without saving
+        ExcelApp.Quit;
+        Exit;
+      end;
+
+      // Save the worksheet as CSV and load into TStringGrid
+      SaveWorksheetAsCSV(Worksheet, CSVFilePath);
+      LoadCSVToStringGrid(CSVFilePath, frmMain.sgPhaseData);
+
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Error processing worksheet: ' + E.Message);
+        Workbook.Close(False);
+        ExcelApp.Quit;
+        Exit;
+      end;
+    end;
+
+  finally
+    Workbook := VarNull;
+    ExcelApp := VarNull;
+  end;
+end;
+
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+var
+  ExcelApp, Workbook, Worksheet: OleVariant;
+  FolderPath, SearchPattern, FilePath, TempFolder, CSVFilePath, WorksheetName: string;
+  Year: Word;
+  SearchRec: TSearchRec;
+  Found: Boolean;
+begin
+  // Extract the year from EQDate
+  Year := YearOf(EQDate);
+
+  // Construct the folder path using the year
+  FolderPath := IncludeTrailingPathDelimiter(ProgramPath) + 'DB\PHASEDATA\' + IntToStr(Year);
+
+  // Search for Excel files that start with "yyyy_mm" format and end with ".xlsx"
+  SearchPattern := FormatDateTime('yyyy_mm', EQDate) + '*.xlsx';  // Wildcard to find the file
+
+  // Initialize found flag
+  Found := False;
+
+  // Use FindFirst to search for files that match the pattern in the folder
+  if FindFirst(IncludeTrailingPathDelimiter(FolderPath) + SearchPattern, faAnyFile, SearchRec) = 0 then
+  begin
+    try
+      // Set the file path to the first match found
+      FilePath := IncludeTrailingPathDelimiter(FolderPath) + SearchRec.Name;
+      Found := True;
+    finally
+      FindClose(SearchRec);
+    end;
+  end;
+
+  // Check if we found the file
+  if not Found then
+  begin
+    ShowMessage('No matching file found for pattern: ' + SearchPattern);
+    Exit;
+  end;
+
+  // Construct the worksheet name based on the day of the month (e.g., Jan02)
+  WorksheetName := FormatDateTime('mmmdd', EQDate);  // 'mmmdd' gives the format like 'Jan02'
+
+  // Construct the TEMP folder path inside ProgramPath
+  TempFolder := IncludeTrailingPathDelimiter(ProgramPath) + 'TEMP';
+
+  // Ensure the TEMP folder exists, create it if necessary
+  if not DirectoryExists(TempFolder) then
+  begin
+    if not ForceDirectories(TempFolder) then
+    begin
+      ShowMessage('Failed to create TEMP folder at: ' + TempFolder);
+      Exit;
+    end;
+  end;
+
+  // Construct the full path for the CSV file (temp.csv)
+  CSVFilePath := IncludeTrailingPathDelimiter(TempFolder) + 'temp.csv';
+
+  try
+    // Start Excel application
+    ExcelApp := CreateOleObject('Excel.Application');
+    ExcelApp.Visible := False;  // Excel will run in the background
+
+    // Disable alerts to avoid any pop-ups during the save process
+    ExcelApp.DisplayAlerts := False;
+
+    // Open the workbook
+    Workbook := ExcelApp.Workbooks.Open(FilePath);
+
+    // Try to access the specified worksheet
+    try
+      Worksheet := Workbook.Worksheets[WorksheetName];
+      Worksheet.Activate;
+
+      // Save the worksheet as CSV
+      Worksheet.SaveAs(CSVFilePath, 6);  // 6 is the FileFormat for CSV
+
+//      ShowMessage('Worksheet successfully converted to CSV: ' + CSVFilePath);
+
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Error accessing worksheet: ' + E.Message);
+        Workbook.Close(False);
+        ExcelApp.Quit;
+        Exit;
+      end;
+    end;
+
+    // Close the workbook and quit Excel
+    Workbook.Close(False);
+    ExcelApp.Quit;
+
+  finally
+    // Re-enable alerts
+    ExcelApp.DisplayAlerts := True;
+
+    // Cleanup Excel references
+    Workbook := Unassigned;
+    ExcelApp := Unassigned;
+  end;
+end;
+
+// Procedure to load CSV data into TStringGrid
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+var
+  CSVFile: TextFile;
+  Line, CellData: string;
+  RowIndex, ColIndex: Integer;
+  Cells: TArray<string>;
+begin
+  // Open the CSV file for reading
+  AssignFile(CSVFile, CSVFilePath);
+  Reset(CSVFile);
+
+  try
+    // Initialize row index
+    RowIndex := 0;
+
+    // Read each line from the CSV file
+    while not Eof(CSVFile) do
+    begin
+      ReadLn(CSVFile, Line);
+
+      // Split the line into cells by commas
+      Cells := Line.Split([',']);
+
+      // Set the grid's row count dynamically
+      if RowIndex >= sgPhaseData.RowCount then
+        sgPhaseData.RowCount := RowIndex + 1;
+
+      // Set the grid's column count dynamically
+      if Length(Cells) > sgPhaseData.ColCount then
+        sgPhaseData.ColCount := Length(Cells);
+
+      // Fill the TStringGrid cells with data
+      for ColIndex := 0 to Length(Cells) - 1 do
+      begin
+        CellData := Cells[ColIndex];
+        sgPhaseData.Cells[ColIndex, RowIndex] := CellData;
+      end;
+
+      // Move to the next row
+      Inc(RowIndex);
+    end;
+  finally
+    CloseFile(CSVFile);
+  end;
+end;
+
+end.
+

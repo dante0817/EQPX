@@ -1,0 +1,312 @@
+unit UTILS_PhaseData;
+
+interface
+
+uses
+  ComObj, Dialogs, SysUtils, DateUtils, Variants, Vcl.Grids,
+  IOUtils, StrUtils, Classes, ExtCtrls;
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+procedure PhaseData_Filter_Time(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+
+procedure PhaseData_Filter_Distance(SourceGrid, StationGrid, TargetGrid: TStringGrid;
+  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+
+implementation
+
+uses EQPX_1, UTILS_Math;
+
+procedure ConvertExcelToCSV(EQDate: TDateTime; ProgramPath: string);
+var
+  ExcelApp, Workbook, Worksheet: OleVariant;
+  FolderPath, SearchPattern, FilePath, TempFolder, CSVFilePath, WorksheetName: string;
+  Year: Word;
+  SearchRec: TSearchRec;
+  Found: Boolean;
+begin
+  // Extract the year from EQDate
+  Year := YearOf(EQDate);
+
+  // Construct the folder path using the year
+  FolderPath := IncludeTrailingPathDelimiter(ProgramPath) + 'DB\PHASEDATA\' + IntToStr(Year);
+
+  // Search for Excel files that start with "yyyy_mm" format and end with ".xlsx"
+  SearchPattern := FormatDateTime('yyyy_mm', EQDate) + '*.xlsx';  // Wildcard to find the file
+
+  // Initialize found flag
+  Found := False;
+
+  // Use FindFirst to search for files that match the pattern in the folder
+  if FindFirst(IncludeTrailingPathDelimiter(FolderPath) + SearchPattern, faAnyFile, SearchRec) = 0 then
+  begin
+    try
+      // Set the file path to the first match found
+      FilePath := IncludeTrailingPathDelimiter(FolderPath) + SearchRec.Name;
+      Found := True;
+    finally
+      FindClose(SearchRec);
+    end;
+  end;
+
+  // Check if we found the file
+  if not Found then
+  begin
+    ShowMessage('No matching file found for pattern: ' + SearchPattern);
+    Exit;
+  end;
+
+  // Construct the worksheet name based on the day of the month (e.g., Jan02)
+  WorksheetName := FormatDateTime('mmmdd', EQDate);  // 'mmmdd' gives the format like 'Jan02'
+
+  // Construct the TEMP folder path inside ProgramPath
+  TempFolder := IncludeTrailingPathDelimiter(ProgramPath) + 'TEMP';
+
+  // Ensure the TEMP folder exists, create it if necessary
+  if not DirectoryExists(TempFolder) then
+  begin
+    if not ForceDirectories(TempFolder) then
+    begin
+      ShowMessage('Failed to create TEMP folder at: ' + TempFolder);
+      Exit;
+    end;
+  end;
+
+  // Construct the full path for the CSV file (temp.csv)
+  CSVFilePath := IncludeTrailingPathDelimiter(TempFolder) + 'temp.csv';
+
+  try
+    // Start Excel application
+    ExcelApp := CreateOleObject('Excel.Application');
+    ExcelApp.Visible := False;  // Excel will run in the background
+
+    // Disable alerts to avoid any pop-ups during the save process
+    ExcelApp.DisplayAlerts := False;
+
+    // Open the workbook
+    Workbook := ExcelApp.Workbooks.Open(FilePath);
+
+    // Try to access the specified worksheet
+    try
+      Worksheet := Workbook.Worksheets[WorksheetName];
+      Worksheet.Activate;
+
+      // Save the worksheet as CSV
+      Worksheet.SaveAs(CSVFilePath, 6);  // 6 is the FileFormat for CSV
+
+//      ShowMessage('Worksheet successfully converted to CSV: ' + CSVFilePath);
+
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Error accessing worksheet: ' + E.Message);
+        Workbook.Close(False);
+        ExcelApp.Quit;
+        Exit;
+      end;
+    end;
+
+    // Close the workbook and quit Excel
+    Workbook.Close(False);
+    ExcelApp.Quit;
+
+  finally
+    // Re-enable alerts
+    ExcelApp.DisplayAlerts := True;
+
+    // Cleanup Excel references
+    Workbook := Unassigned;
+    ExcelApp := Unassigned;
+  end;
+end;
+
+// Procedure to load CSV data into TStringGrid
+procedure LoadCSVToGrid(const CSVFilePath: string; sgPhaseData: TStringGrid);
+var
+  CSVFile: TextFile;
+  Line, CellData: string;
+  RowIndex, ColIndex: Integer;
+  Cells: TArray<string>;
+begin
+  // Open the CSV file for reading
+  AssignFile(CSVFile, CSVFilePath);
+  Reset(CSVFile);
+  try
+    // Initialize row index
+    RowIndex := 0;
+    // Read each line from the CSV file
+    while not Eof(CSVFile) do
+    begin
+      ReadLn(CSVFile, Line);
+      // Split the line into cells by commas
+      Cells := Line.Split([',']);
+      // Set the grid's row count dynamically
+      if RowIndex >= sgPhaseData.RowCount then
+        sgPhaseData.RowCount := RowIndex + 1;
+      // Set the grid's column count dynamically
+      if Length(Cells) > sgPhaseData.ColCount then
+        sgPhaseData.ColCount := Length(Cells);
+      // Fill the TStringGrid cells with data
+      for ColIndex := 0 to Length(Cells) - 1 do
+      begin
+        CellData := Cells[ColIndex];
+        sgPhaseData.Cells[ColIndex, RowIndex] := CellData;
+      end;
+      // Move to the next row
+      Inc(RowIndex);
+    end;
+  finally
+    CloseFile(CSVFile);
+  end;
+end;
+
+procedure PhaseData_Filter_Time(SourceGrid, TargetGrid: TStringGrid; InputDate, InputTime: string; CutoffMinutes: Integer);
+var
+  RowIndex, TargetRowIndex: Integer;
+  PArrivalTimeStr: string;
+  ParsedDate, ParsedTime, InputDateTime, GridDateTime: TDateTime;
+  FormatSettings: TFormatSettings;
+begin
+  // Set up custom format settings for date and time parsing
+  FormatSettings := TFormatSettings.Create;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy-mm-dd';
+  FormatSettings.TimeSeparator := ':';
+  FormatSettings.ShortTimeFormat := 'hh:mm';
+
+  // Parse the input date (yyyy-mm-dd) into TDateTime
+  if not TryStrToDate(InputDate, ParsedDate, FormatSettings) then
+    raise Exception.Create('Invalid input date format');
+
+  // Parse the input time (hh:mm) into TDateTime (only the fractional part will be used)
+  if not TryStrToTime(InputTime, ParsedTime, FormatSettings) then
+    raise Exception.Create('Invalid input time format');
+
+  // Combine the parsed date and time into a single TDateTime
+  InputDateTime := ParsedDate + Frac(ParsedTime);  // Frac extracts the time part
+
+  // Initialize TargetGrid (sgPhaseData2) and set the column count to match SourceGrid
+  TargetGrid.RowCount := 1; // Reset to 1 row to start adding filtered data
+  TargetGrid.ColCount := SourceGrid.ColCount;
+
+  // Loop through each row in the SourceGrid
+  TargetRowIndex := 1; // Start target row index at 1 since row 0 is typically the header
+  for RowIndex := 3 to SourceGrid.RowCount - 1 do
+//  for RowIndex := SourceGrid.FixedRows to SourceGrid.RowCount - 1 do
+  begin
+    // Assuming the "P arrival" time is in column 4 of the grid
+    PArrivalTimeStr := SourceGrid.Cells[3, RowIndex];  // Extract "P arrival" time part
+
+    // Check if "P arrival" is empty
+    if Trim(PArrivalTimeStr) = '' then Break;
+
+    // Convert "P arrival" time string (HHMMSS.FF) to TDateTime
+    try
+      GridDateTime := EncodeTime(
+        StrToInt(Copy(PArrivalTimeStr, 1, 2)),  // Hours
+        StrToInt(Copy(PArrivalTimeStr, 3, 2)),  // Minutes
+        StrToInt(Copy(PArrivalTimeStr, 5, 2)),  // Seconds
+        Round(StrToFloat('0.' + Copy(PArrivalTimeStr, 8, 2)) * 1000)  // Milliseconds
+      );
+    except
+      Continue;  // Skip invalid times
+    end;
+
+    // Combine the parsed date with the P arrival time
+    GridDateTime := ParsedDate + Frac(GridDateTime);
+
+    // Check if the grid "P arrival" time is within the specified cutoff minutes after the input time
+    if (GridDateTime >= InputDateTime) and (GridDateTime <= IncMinute(InputDateTime, CutoffMinutes)) then
+    begin
+      // If the row matches the filter criteria, copy it to the TargetGrid
+      TargetGrid.RowCount := TargetRowIndex + 1;  // Increase the row count in the target grid
+      TargetGrid.Rows[TargetRowIndex] := SourceGrid.Rows[RowIndex];  // Copy the entire row
+      Inc(TargetRowIndex);  // Move to the next row in the target grid
+    end;
+  end;
+end;
+
+procedure PhaseData_Filter_Distance(SourceGrid, StationGrid, TargetGrid: TStringGrid;
+  ledEQ_Lat, ledEQ_Lon, ledEQ_Dep, ledEQ_Mag: TLabeledEdit; Cutoff_Distance: Double);
+var
+  i, j, finalRow: Integer;
+  stationValue, searchValue: string;
+  found: Boolean;
+  stationLat, stationLon, stationElev: Double;
+  eqLat, eqLon, eqDep, eqMag: Double;
+  surfaceDistance, elevationDiff, hypoDistance: Double;
+begin
+  // Parse earthquake location and depth from labeled edits
+  eqLat := StrToFloat(ledEQ_Lat.Text);
+  eqLon := StrToFloat(ledEQ_Lon.Text);
+  eqDep := StrToFloat(ledEQ_Dep.Text);
+  eqMag := StrToFloat(ledEQ_Mag.Text);
+
+  // Initialize TargetGrid (sgPhaseData_Filter_Distance) with the same columns as SourceGrid
+  TargetGrid.ColCount := SourceGrid.ColCount;  // Ensure the column count matches
+  TargetGrid.RowCount := 1;  // Start with 1 row for headers (if needed)
+
+  // Copy the headers from SourceGrid to TargetGrid
+  for i := 0 to SourceGrid.ColCount - 1 do
+  begin
+    TargetGrid.Cells[i, 0] := SourceGrid.Cells[i, 0];
+  end;
+
+  // Iterate through SourceGrid rows (starting from 1, assuming row 0 is header)
+  for i := 1 to SourceGrid.RowCount - 1 do
+  begin
+    // Get the station value from the first column (index 0) of SourceGrid
+    stationValue := LeftStr(SourceGrid.Cells[0, i], 3);
+
+    // Search for the station value in StationGrid (sgSOEPD_stations), specifically in the first column (index 0)
+    found := False;
+    for j := 1 to StationGrid.RowCount - 1 do
+    begin
+      // Get the station_code from the first column (index 0) of StationGrid
+      searchValue := StationGrid.Cells[0, j];
+
+      if stationValue = searchValue then
+      begin
+        // Station found in StationGrid
+        found := True;
+
+        // Get station coordinates and elevation
+        stationLat := StrToFloat(StationGrid.Cells[1, j]);  // Latitude is in column 1
+        stationLon := StrToFloat(StationGrid.Cells[2, j]);  // Longitude is in column 2
+        stationElev := StrToFloat(StationGrid.Cells[3, j]); // Elevation is in column 3
+
+        // Calculate the surface distance using the Haversine formula
+        surfaceDistance := Haversine(eqLat, eqLon, stationLat, stationLon);
+
+        // Compute the elevation difference (in km)
+        elevationDiff := (eqDep - stationElev) / 1000.0;
+
+        // Calculate the 3D hypocentral distance using Pythagorean theorem
+        hypoDistance := Sqrt(Sqr(surfaceDistance) + Sqr(elevationDiff));
+
+        // Check if the hypocentral distance is within the cutoff distance
+        if hypoDistance <= Cutoff_Distance then
+        begin
+          // Add the station to the TargetGrid (sgPhaseData_Filter_Distance)
+          finalRow := TargetGrid.RowCount;  // Get current row count
+          TargetGrid.RowCount := finalRow + 1;  // Increment row count
+
+          // Copy the row data from SourceGrid to TargetGrid (same format)
+          for var col := 0 to SourceGrid.ColCount - 1 do
+          begin
+            TargetGrid.Cells[col, finalRow] := SourceGrid.Cells[col, i];
+          end;
+
+          // Optionally, you can add the calculated hypocentral distance in an extra column if needed
+          // (Assuming the last column can hold the distance value if needed)
+          // TargetGrid.Cells[TargetGrid.ColCount - 1, finalRow] := FloatToStr(hypoDistance);
+        end;
+
+        Break;  // Exit the search loop once found
+      end;
+    end;
+  end;
+end;
+
+end.
+
